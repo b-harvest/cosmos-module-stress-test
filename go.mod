@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/cosmos/cosmos-sdk v0.42.4
+	github.com/cosmos/go-bip39 v1.0.0
 	github.com/pelletier/go-toml v1.9.0
 	github.com/rs/zerolog v1.21.0
 	github.com/stretchr/testify v1.7.0
