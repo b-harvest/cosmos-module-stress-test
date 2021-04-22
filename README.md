@@ -1,6 +1,6 @@
 ## Overview
 
-This program does stress test for the liquidity module. This will help prepare the upcoming Gravity DEX testnet Competition.
+This program performs stress testing for the liquidity module. This will help to prepare the upcoming [Gravity DEX Testnet Competition](https://gravitydex.io/).
 ## Version
 
 - [Liquidity Module v1.2.4](https://github.com/tendermint/liquidity/tree/v1.2.4) 
