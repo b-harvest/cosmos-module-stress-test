@@ -8,6 +8,9 @@ require (
 	github.com/rs/zerolog v1.21.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/liquidity v1.2.3
+	github.com/tendermint/tendermint v0.34.9
+	github.com/test-go/testify v1.1.4
+	google.golang.org/grpc v1.35.0
 )
 
 replace (
