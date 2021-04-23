@@ -12,23 +12,34 @@ import (
 	sdkclienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
 // Transaction is an object that has common fields for signing a transaction.
 type Transaction struct {
-	Client    *client.Client `json:"client"`
-	ChainID   string         `json:"chain_id"`
-	Mnemonic  string         `json:"mnemonic"`
-	BondDenom string         `json:"bond_denom"`
+	Client   *client.Client `json:"client"`
+	ChainID  string         `json:"chain_id"`
+	Mnemonic string         `json:"mnemonic"`
+	Denom    string         `json:"denom"`
 }
 
-// SignMsgCreatePool wraps MsgCreatePool and signs it with account's signature using its private key.
-func (t *Transaction) SignMsgCreatePool(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
+// NewTransaction returns new Transaction.
+func NewTransaction(client *client.Client, chainID string, mnemonic string, denom string) *Transaction {
+	return &Transaction{
+		Client:   client,
+		ChainID:  chainID,
+		Mnemonic: mnemonic,
+		Denom:    denom,
+	}
+}
+
+// SignAndBroadcastMsgCreatePool wraps MsgCreatePool and signs it with account's signature using its private key.
+func (t *Transaction) SignAndBroadcastMsgCreatePool(ctx context.Context, depositCoinA, depositCoinB sdktypes.Coin) (*tx.BroadcastTxResponse, error) {
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
@@ -38,7 +49,7 @@ func (t *Transaction) SignMsgCreatePool(ctx context.Context, accAddr string, dep
 	// msgs
 	poolCreator, err := sdktypes.AccAddressFromBech32(accAddr)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	poolTypeId := uint32(1)
@@ -50,24 +61,29 @@ func (t *Transaction) SignMsgCreatePool(ctx context.Context, accAddr string, dep
 	msgs := []sdktypes.Msg{msgCreatePool}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
 
 	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
-	return txBytes, nil
+	res, err := t.Client.GRPC.BroadcastTx(txBytes)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
+	return res, nil
 }
 
-// SignMsgDeposit wraps MsgDeposit and signs it with account's signature using its private key.
-func (t *Transaction) SignMsgDeposit(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
+// SignAndBroadcastMsgDeposit wraps MsgDeposit and signs it with account's signature using its private key.
+func (t *Transaction) SignAndBroadcastMsgDeposit(ctx context.Context, depositCoinA, depositCoinB sdktypes.Coin) (*tx.BroadcastTxResponse, error) {
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
@@ -77,7 +93,7 @@ func (t *Transaction) SignMsgDeposit(ctx context.Context, accAddr string, deposi
 	// msgs
 	poolCreator, err := sdktypes.AccAddressFromBech32(accAddr)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	poolId := uint64(1)
@@ -89,24 +105,29 @@ func (t *Transaction) SignMsgDeposit(ctx context.Context, accAddr string, deposi
 	msgs := []sdktypes.Msg{msgDepositWithinBatch}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
 
 	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
-	return txBytes, nil
+	res, err := t.Client.GRPC.BroadcastTx(txBytes)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
+	return res, nil
 }
 
-// SignMsgWithdraw wraps MsgWithdraw and signs it with account's signature using its private key.
-func (t *Transaction) SignMsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) ([]byte, error) {
+// SignAndBroadcastMsgWithdraw wraps MsgWithdraw and signs it with account's signature using its private key.
+func (t *Transaction) SignAndBroadcastMsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) (*tx.BroadcastTxResponse, error) {
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
@@ -116,7 +137,7 @@ func (t *Transaction) SignMsgWithdraw(ctx context.Context, poolCoin sdktypes.Coi
 	// msgs
 	withdrawer, err := sdktypes.AccAddressFromBech32(accAddr)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	poolId := uint64(1)
@@ -127,26 +148,31 @@ func (t *Transaction) SignMsgWithdraw(ctx context.Context, poolCoin sdktypes.Coi
 	msgs := []sdktypes.Msg{msgWithdrawWithinBatch}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
 
 	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
-	return txBytes, nil
+	res, err := t.Client.GRPC.BroadcastTx(txBytes)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
+	return res, nil
 }
 
-// SignMsgSwap wraps MsgSwap and signs it with account's signature using its private key.
-func (t *Transaction) SignMsgSwap(ctx context.Context, offerCoin sdktypes.Coin, demandCoinDenom string,
-	orderPrice sdktypes.Dec, swapFeeRate sdktypes.Dec) ([]byte, error) {
+// SignAndBroadcastMsgSwap wraps MsgSwap and signs it with account's signature using its private key.
+func (t *Transaction) SignAndBroadcastMsgSwap(ctx context.Context, offerCoin sdktypes.Coin, demandCoinDenom string,
+	orderPrice sdktypes.Dec, swapFeeRate sdktypes.Dec) (*tx.BroadcastTxResponse, error) {
 
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
@@ -156,7 +182,7 @@ func (t *Transaction) SignMsgSwap(ctx context.Context, offerCoin sdktypes.Coin, 
 	// msgs
 	swapRequester, err := sdktypes.AccAddressFromBech32(accAddr)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
 	poolId := uint64(1)
@@ -168,17 +194,22 @@ func (t *Transaction) SignMsgSwap(ctx context.Context, offerCoin sdktypes.Coin, 
 	msgs := []sdktypes.Msg{msgWithdrawWithinBatch}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
 
 	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
-		return nil, err
+		return &tx.BroadcastTxResponse{}, err
 	}
 
-	return txBytes, nil
+	res, err := t.Client.GRPC.BroadcastTx(txBytes)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
+	return res, nil
 }
 
 // WrapMultiMsgs
