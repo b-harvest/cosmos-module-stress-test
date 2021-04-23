@@ -102,8 +102,41 @@ func (t *Transaction) MsgDeposit(ctx context.Context, accAddr string, depositCoi
 }
 
 // MsgWithdraw
-func (t *Transaction) MsgWithdraw() {
+func (t *Transaction) MsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) ([]byte, error) {
+	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
+	if err != nil {
+		return nil, err
+	}
 
+	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	accNumber := account.GetAccountNumber()
+	accSeq := account.GetSequence()
+
+	// msgs
+	withdrawer, err := sdktypes.AccAddressFromBech32(accAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	poolId := uint64(1)
+
+	msgWithdrawWithinBatch := liqtypes.NewMsgWithdrawWithinBatch(withdrawer, poolId, poolCoin)
+	msgWithdrawWithinBatch.ValidateBasic()
+
+	msgs := []sdktypes.Msg{msgWithdrawWithinBatch}
+
+	// fees
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+
+	// memo
+	memo := ""
+
+	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
 }
 
 // MsgSwap
