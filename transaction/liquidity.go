@@ -15,6 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+
+	"github.com/rs/zerolog/log"
 )
 
 // Transaction is an object that has common fields for signing a transaction.
@@ -22,27 +24,33 @@ type Transaction struct {
 	Client   *client.Client `json:"client"`
 	ChainID  string         `json:"chain_id"`
 	Mnemonic string         `json:"mnemonic"`
-	Denom    string         `json:"denom"`
+	FeeDenom string         `json:"fee_denom"`
 }
 
 // NewTransaction returns new Transaction.
-func NewTransaction(client *client.Client, chainID string, mnemonic string, denom string) *Transaction {
+func NewTransaction(client *client.Client, chainID string, mnemonic string, feeDenom string) *Transaction {
 	return &Transaction{
 		Client:   client,
 		ChainID:  chainID,
 		Mnemonic: mnemonic,
-		Denom:    denom,
+		FeeDenom: feeDenom,
 	}
 }
 
 // SignAndBroadcastMsgCreatePool wraps MsgCreatePool and signs it with account's signature using its private key.
 func (t *Transaction) SignAndBroadcastMsgCreatePool(ctx context.Context, depositCoinA, depositCoinB sdktypes.Coin) (*tx.BroadcastTxResponse, error) {
+	log.Debug().Msg("signing MsgCreatePool and broadcast raw tx data")
+
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
 		return &tx.BroadcastTxResponse{}, err
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
 	accNumber := account.GetAccountNumber()
 	accSeq := account.GetSequence()
 
@@ -61,7 +69,7 @@ func (t *Transaction) SignAndBroadcastMsgCreatePool(ctx context.Context, deposit
 	msgs := []sdktypes.Msg{msgCreatePool}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.FeeDenom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
@@ -87,6 +95,10 @@ func (t *Transaction) SignAndBroadcastMsgDeposit(ctx context.Context, depositCoi
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
 	accNumber := account.GetAccountNumber()
 	accSeq := account.GetSequence()
 
@@ -105,7 +117,7 @@ func (t *Transaction) SignAndBroadcastMsgDeposit(ctx context.Context, depositCoi
 	msgs := []sdktypes.Msg{msgDepositWithinBatch}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.FeeDenom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
@@ -131,6 +143,10 @@ func (t *Transaction) SignAndBroadcastMsgWithdraw(ctx context.Context, poolCoin 
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
 	accNumber := account.GetAccountNumber()
 	accSeq := account.GetSequence()
 
@@ -148,7 +164,7 @@ func (t *Transaction) SignAndBroadcastMsgWithdraw(ctx context.Context, poolCoin 
 	msgs := []sdktypes.Msg{msgWithdrawWithinBatch}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.FeeDenom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
@@ -176,6 +192,10 @@ func (t *Transaction) SignAndBroadcastMsgSwap(ctx context.Context, offerCoin sdk
 	}
 
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	if err != nil {
+		return &tx.BroadcastTxResponse{}, err
+	}
+
 	accNumber := account.GetAccountNumber()
 	accSeq := account.GetSequence()
 
@@ -194,7 +214,7 @@ func (t *Transaction) SignAndBroadcastMsgSwap(ctx context.Context, offerCoin sdk
 	msgs := []sdktypes.Msg{msgWithdrawWithinBatch}
 
 	// fees
-	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.Denom, sdktypes.NewInt(0)))
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.FeeDenom, sdktypes.NewInt(0)))
 
 	// memo
 	memo := ""
