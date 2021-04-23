@@ -9,7 +9,7 @@ GRPC_PORT=9090
 MNEMONIC_1="guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
 MNEMONIC_2="friend excite rough reopen cover wheel spoon convince island path clean monkey play snow number walnut pull lock shoot hurry dream divide concert discover"
 MNEMONIC_3="fuel obscure melt april direct second usual hair leave hobby beef bacon solid drum used law mercy worry fat super must ritual bring faculty"
-GENESIS_COINS=10000000000stake,10000000000token,10000000000atom
+GENESIS_COINS=50000000000000stake,500000000000000uakt,500000000000000uatom,50000000000000ubtsg,500000000000000udvpn,500000000000000ugcyb,500000000000000uiris,500000000000000uluna,500000000000000ungm,5000000000000000uxprt,500000000000000uxrn,500000000000000xrun
 
 # Ensure liquidityd is installed
 if ! [ -x "$(which $BINARY)" ]; then
