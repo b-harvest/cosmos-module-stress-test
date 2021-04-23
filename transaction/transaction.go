@@ -140,8 +140,44 @@ func (t *Transaction) MsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) (
 }
 
 // MsgSwap
-func (t *Transaction) MsgSwap() {
+func (t *Transaction) MsgSwap(ctx context.Context, offerCoin sdktypes.Coin, demandCoinDenom string,
+	orderPrice sdktypes.Dec, swapFeeRate sdktypes.Dec) ([]byte, error) {
 
+	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	accNumber := account.GetAccountNumber()
+	accSeq := account.GetSequence()
+
+	// msgs
+	swapRequester, err := sdktypes.AccAddressFromBech32(accAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	poolId := uint64(1)
+	swapTypeId := uint32(1)
+
+	msgWithdrawWithinBatch := liqtypes.NewMsgSwapWithinBatch(swapRequester, poolId, swapTypeId, offerCoin, demandCoinDenom, orderPrice, swapFeeRate)
+	msgWithdrawWithinBatch.ValidateBasic()
+
+	msgs := []sdktypes.Msg{msgWithdrawWithinBatch}
+
+	// fees
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+
+	// memo
+	memo := ""
+
+	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
 }
 
 // WrapMultiMsgs
@@ -149,12 +185,13 @@ func WrapMultiMsgs() {
 
 }
 
+// Sign generates signatures and provide canonical bytes to sign over.
 func (t *Transaction) Sign(msgs []sdktypes.Msg, fees sdktypes.Coins, memo string,
 	accNumber uint64, accSeq uint64, privKey *secp256k1.PrivKey) ([]byte, error) {
 
 	txBuilder := t.Client.CliCtx.TxConfig.NewTxBuilder()
 	txBuilder.SetMsgs(msgs...)
-	txBuilder.SetGasLimit(200000)
+	txBuilder.SetGasLimit(10000000)
 	txBuilder.SetFeeAmount(fees)
 	txBuilder.SetMemo(memo)
 
