@@ -8,12 +8,12 @@ This program performs stress testing for the liquidity module. This will help to
 - [Tendermint v0.34.9](https://github.com/tendermint/tendermint/tree/v0.34.9)
 
 ## Testnet Information
-### genesis.json 
+### Genesis 
 
-- https://github.com/nodebreaker0-0/gentx/blob/main/genesis.json
+- [genesis.json](https://github.com/nodebreaker0-0/gentx/blob/main/genesis.json) file 
 - chain-id is `swap-testnet-2004` 
 
-### Token types
+### Coin Types
 
 ```bash
 "coins":[
