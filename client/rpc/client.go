@@ -38,18 +38,3 @@ func (c *Client) GetNetworkChainID(ctx context.Context) (string, error) {
 func (c *Client) GetStatus(ctx context.Context) (*tmctypes.ResultStatus, error) {
 	return c.Status(ctx)
 }
-
-// GetBlock returns block information for the height
-func (c *Client) GetBlock(ctx context.Context, height int64) (*tmctypes.ResultBlock, error) {
-	return c.Block(ctx, &height)
-}
-
-// GetLatestBlockHeight returns the latest block height on the network
-func (c *Client) GetLatestBlockHeight(ctx context.Context) (int64, error) {
-	status, err := c.Status(ctx)
-	if err != nil {
-		return -1, err
-	}
-
-	return status.SyncInfo.LatestBlockHeight, nil
-}
