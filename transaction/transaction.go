@@ -10,6 +10,7 @@ import (
 	liqtypes "github.com/tendermint/liquidity/x/liquidity/types"
 
 	sdkclienttx "github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -23,20 +24,17 @@ type Transaction struct {
 }
 
 // MsgCreatePool
-func (t *Transaction) MsgCreatePool(accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
-	ctx := context.Background()
-
+func (t *Transaction) MsgCreatePool(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
 		return nil, err
 	}
 
-	// account information
 	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
 	accNumber := account.GetAccountNumber()
 	accSeq := account.GetSequence()
 
-	// messages
+	// msgs
 	poolCreator, err := sdktypes.AccAddressFromBech32(accAddr)
 	if err != nil {
 		return nil, err
@@ -56,7 +54,71 @@ func (t *Transaction) MsgCreatePool(accAddr string, depositCoinA, depositCoinB s
 	// memo
 	memo := ""
 
-	// txBuilder
+	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
+}
+
+// MsgDeposit
+func (t *Transaction) MsgDeposit(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
+	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	accNumber := account.GetAccountNumber()
+	accSeq := account.GetSequence()
+
+	// msgs
+	poolCreator, err := sdktypes.AccAddressFromBech32(accAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	poolId := uint64(1)
+	depositCoins := sdktypes.NewCoins(depositCoinA, depositCoinB)
+
+	msgDepositWithinBatch := liqtypes.NewMsgDepositWithinBatch(poolCreator, poolId, depositCoins)
+	msgDepositWithinBatch.ValidateBasic()
+
+	msgs := []sdktypes.Msg{msgDepositWithinBatch}
+
+	// fees
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+
+	// memo
+	memo := ""
+
+	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
+}
+
+// MsgWithdraw
+func (t *Transaction) MsgWithdraw() {
+
+}
+
+// MsgSwap
+func (t *Transaction) MsgSwap() {
+
+}
+
+// WrapMultiMsgs
+func WrapMultiMsgs() {
+
+}
+
+func (t *Transaction) Sign(msgs []sdktypes.Msg, fees sdktypes.Coins, memo string,
+	accNumber uint64, accSeq uint64, privKey *secp256k1.PrivKey) ([]byte, error) {
+
 	txBuilder := t.Client.CliCtx.TxConfig.NewTxBuilder()
 	txBuilder.SetMsgs(msgs...)
 	txBuilder.SetGasLimit(200000)
@@ -74,7 +136,7 @@ func (t *Transaction) MsgCreatePool(accAddr string, depositCoinA, depositCoinB s
 		Sequence: accSeq,
 	}
 
-	err = txBuilder.SetSignatures(sigV2)
+	err := txBuilder.SetSignatures(sigV2)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set signatures: %s", err)
 	}
@@ -95,30 +157,5 @@ func (t *Transaction) MsgCreatePool(accAddr string, depositCoinA, depositCoinB s
 		return nil, fmt.Errorf("failed to set signatures: %s", err)
 	}
 
-	txBytes, err := t.Client.CliCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode transaction: %s", err)
-	}
-
-	return txBytes, nil
-}
-
-// MsgDeposit
-func (t *Transaction) MsgDeposit() {
-
-}
-
-// MsgWithdraw
-func (t *Transaction) MsgWithdraw() {
-
-}
-
-// MsgSwap
-func (t *Transaction) MsgSwap() {
-
-}
-
-// WrapMultiMsgs
-func WrapMultiMsgs() {
-
+	return t.Client.CliCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
 }
