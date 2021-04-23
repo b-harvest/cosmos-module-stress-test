@@ -31,10 +31,3 @@ func TestGetNetworkChainID(t *testing.T) {
 
 	t.Log(chainID)
 }
-
-func TestGetBlock(t *testing.T) {
-	block, err := c.GetBlock(context.Background(), 100)
-	require.NoError(t, err)
-
-	t.Log(block)
-}

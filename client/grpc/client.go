@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Client wraps GRPC client connection.
@@ -24,4 +26,9 @@ func NewClient(grpcURL string, timeout int64) *Client {
 	}
 
 	return &Client{client}
+}
+
+// IsNotFound returns not found status.
+func IsNotFound(err error) bool {
+	return status.Convert(err).Code() == codes.NotFound
 }
