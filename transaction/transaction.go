@@ -16,6 +16,7 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
+// Transaction is an object that has common fields for signing a transaction.
 type Transaction struct {
 	Client    *client.Client `json:"client"`
 	ChainID   string         `json:"chain_id"`
@@ -23,8 +24,8 @@ type Transaction struct {
 	BondDenom string         `json:"bond_denom"`
 }
 
-// MsgCreatePool
-func (t *Transaction) MsgCreatePool(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
+// SignMsgCreatePool wraps MsgCreatePool and signs it with account's signature using its private key.
+func (t *Transaction) SignMsgCreatePool(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
 		return nil, err
@@ -54,7 +55,7 @@ func (t *Transaction) MsgCreatePool(ctx context.Context, accAddr string, deposit
 	// memo
 	memo := ""
 
-	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +63,8 @@ func (t *Transaction) MsgCreatePool(ctx context.Context, accAddr string, deposit
 	return txBytes, nil
 }
 
-// MsgDeposit
-func (t *Transaction) MsgDeposit(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
+// SignMsgDeposit wraps MsgDeposit and signs it with account's signature using its private key.
+func (t *Transaction) SignMsgDeposit(ctx context.Context, accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
 		return nil, err
@@ -93,7 +94,7 @@ func (t *Transaction) MsgDeposit(ctx context.Context, accAddr string, depositCoi
 	// memo
 	memo := ""
 
-	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +102,8 @@ func (t *Transaction) MsgDeposit(ctx context.Context, accAddr string, depositCoi
 	return txBytes, nil
 }
 
-// MsgWithdraw
-func (t *Transaction) MsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) ([]byte, error) {
+// SignMsgWithdraw wraps MsgWithdraw and signs it with account's signature using its private key.
+func (t *Transaction) SignMsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) ([]byte, error) {
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
 	if err != nil {
 		return nil, err
@@ -131,7 +132,7 @@ func (t *Transaction) MsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) (
 	// memo
 	memo := ""
 
-	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +140,8 @@ func (t *Transaction) MsgWithdraw(ctx context.Context, poolCoin sdktypes.Coin) (
 	return txBytes, nil
 }
 
-// MsgSwap
-func (t *Transaction) MsgSwap(ctx context.Context, offerCoin sdktypes.Coin, demandCoinDenom string,
+// SignMsgSwap wraps MsgSwap and signs it with account's signature using its private key.
+func (t *Transaction) SignMsgSwap(ctx context.Context, offerCoin sdktypes.Coin, demandCoinDenom string,
 	orderPrice sdktypes.Dec, swapFeeRate sdktypes.Dec) ([]byte, error) {
 
 	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
@@ -172,7 +173,7 @@ func (t *Transaction) MsgSwap(ctx context.Context, offerCoin sdktypes.Coin, dema
 	// memo
 	memo := ""
 
-	txBytes, err := t.Sign(msgs, fees, memo, accNumber, accSeq, privKey)
+	txBytes, err := t.sign(msgs, fees, memo, accNumber, accSeq, privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -185,8 +186,8 @@ func WrapMultiMsgs() {
 
 }
 
-// Sign generates signatures and provide canonical bytes to sign over.
-func (t *Transaction) Sign(msgs []sdktypes.Msg, fees sdktypes.Coins, memo string,
+// sign generates signatures and provide canonical bytes to sign over.
+func (t *Transaction) sign(msgs []sdktypes.Msg, fees sdktypes.Coins, memo string,
 	accNumber uint64, accSeq uint64, privKey *secp256k1.PrivKey) ([]byte, error) {
 
 	txBuilder := t.Client.CliCtx.TxConfig.NewTxBuilder()
