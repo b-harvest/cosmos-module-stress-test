@@ -1,22 +1,120 @@
 package transaction
 
-// MsgCreatePool
-func MsgCreatePool() {
+import (
+	"context"
+	"fmt"
 
+	"github.com/b-harvest/liquidity-stress-test/client"
+	"github.com/b-harvest/liquidity-stress-test/wallet"
+
+	liqtypes "github.com/tendermint/liquidity/x/liquidity/types"
+
+	sdkclienttx "github.com/cosmos/cosmos-sdk/client/tx"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+)
+
+type Transaction struct {
+	Client    *client.Client `json:"client"`
+	ChainID   string         `json:"chain_id"`
+	Mnemonic  string         `json:"mnemonic"`
+	BondDenom string         `json:"bond_denom"`
+}
+
+// MsgCreatePool
+func (t *Transaction) MsgCreatePool(accAddr string, depositCoinA, depositCoinB sdktypes.Coin) ([]byte, error) {
+	ctx := context.Background()
+
+	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(t.Mnemonic, "")
+	if err != nil {
+		return nil, err
+	}
+
+	// account information
+	account, err := t.Client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	accNumber := account.GetAccountNumber()
+	accSeq := account.GetSequence()
+
+	// messages
+	poolCreator, err := sdktypes.AccAddressFromBech32(accAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	poolTypeId := uint32(1)
+	depositCoins := sdktypes.NewCoins(depositCoinA, depositCoinB)
+
+	msgCreatePool := liqtypes.NewMsgCreatePool(poolCreator, poolTypeId, depositCoins)
+	msgCreatePool.ValidateBasic()
+
+	msgs := []sdktypes.Msg{msgCreatePool}
+
+	// fees
+	fees := sdktypes.NewCoins(sdktypes.NewCoin(t.BondDenom, sdktypes.NewInt(0)))
+
+	// memo
+	memo := ""
+
+	// txBuilder
+	txBuilder := t.Client.CliCtx.TxConfig.NewTxBuilder()
+	txBuilder.SetMsgs(msgs...)
+	txBuilder.SetGasLimit(200000)
+	txBuilder.SetFeeAmount(fees)
+	txBuilder.SetMemo(memo)
+
+	signMode := t.Client.CliCtx.TxConfig.SignModeHandler().DefaultMode()
+
+	sigV2 := signing.SignatureV2{
+		PubKey: privKey.PubKey(),
+		Data: &signing.SingleSignatureData{
+			SignMode:  signMode,
+			Signature: nil,
+		},
+		Sequence: accSeq,
+	}
+
+	err = txBuilder.SetSignatures(sigV2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set signatures: %s", err)
+	}
+
+	// signatures
+	signerData := authsigning.SignerData{
+		ChainID:       t.ChainID,
+		AccountNumber: accNumber,
+		Sequence:      accSeq,
+	}
+
+	if sigV2, err = sdkclienttx.SignWithPrivKey(signMode, signerData, txBuilder, privKey, t.Client.CliCtx.TxConfig, accSeq); err != nil {
+		return nil, fmt.Errorf("failed to sign with private key: %s", err)
+	}
+
+	err = txBuilder.SetSignatures(sigV2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set signatures: %s", err)
+	}
+
+	txBytes, err := t.Client.CliCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode transaction: %s", err)
+	}
+
+	return txBytes, nil
 }
 
 // MsgDeposit
-func MsgDeposit() {
+func (t *Transaction) MsgDeposit() {
 
 }
 
 // MsgWithdraw
-func MsgWithdraw() {
+func (t *Transaction) MsgWithdraw() {
 
 }
 
 // MsgSwap
-func MsgSwap() {
+func (t *Transaction) MsgSwap() {
 
 }
 
