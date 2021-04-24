@@ -17,12 +17,6 @@ if ! [ -x "$(which $BINARY)" ]; then
   exit 1
 fi
 
-# Ensure localnet is running
-if [[ "$(pgrep $BINARY)" == "" ]];then
-    echo "Error: localnet is not running. Try running localnet by 'make localnet" 
-    exit 1
-fi
-
 # Stop liquidityd if it is already running 
 if pgrep -x "$BINARY" >/dev/null; then
     echo "Terminating $BINARY..."
