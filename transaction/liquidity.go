@@ -6,7 +6,7 @@ import (
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 
-	liqtypes "github.com/tendermint/liquidity/x/liquidity/types"
+	liquiditytypes "github.com/tendermint/liquidity/x/liquidity/types"
 
 	sdkclienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -42,13 +42,13 @@ func NewTransaction(client *client.Client, chainID string, gasLimit uint64, fees
 func MsgCreatePool(poolCreator string, poolTypeId uint32, depositCoins sdktypes.Coins) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)
 	if err != nil {
-		return &liqtypes.MsgCreatePool{}, err
+		return &liquiditytypes.MsgCreatePool{}, err
 	}
 
-	msg := liqtypes.NewMsgCreatePool(accAddr, poolTypeId, depositCoins)
+	msg := liquiditytypes.NewMsgCreatePool(accAddr, poolTypeId, depositCoins)
 
 	if err := msg.ValidateBasic(); err != nil {
-		return &liqtypes.MsgCreatePool{}, err
+		return &liquiditytypes.MsgCreatePool{}, err
 	}
 
 	return msg, nil
@@ -58,13 +58,13 @@ func MsgCreatePool(poolCreator string, poolTypeId uint32, depositCoins sdktypes.
 func MsgDeposit(poolCreator string, poolId uint64, depositCoins sdktypes.Coins) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)
 	if err != nil {
-		return &liqtypes.MsgDepositWithinBatch{}, err
+		return &liquiditytypes.MsgDepositWithinBatch{}, err
 	}
 
-	msg := liqtypes.NewMsgDepositWithinBatch(accAddr, poolId, depositCoins)
+	msg := liquiditytypes.NewMsgDepositWithinBatch(accAddr, poolId, depositCoins)
 
 	if err := msg.ValidateBasic(); err != nil {
-		return &liqtypes.MsgDepositWithinBatch{}, err
+		return &liquiditytypes.MsgDepositWithinBatch{}, err
 	}
 
 	return msg, nil
@@ -74,13 +74,13 @@ func MsgDeposit(poolCreator string, poolId uint64, depositCoins sdktypes.Coins) 
 func MsgWithdraw(poolCreator string, poolId uint64, poolCoin sdktypes.Coin) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)
 	if err != nil {
-		return &liqtypes.MsgWithdrawWithinBatch{}, err
+		return &liquiditytypes.MsgWithdrawWithinBatch{}, err
 	}
 
-	msg := liqtypes.NewMsgWithdrawWithinBatch(accAddr, poolId, poolCoin)
+	msg := liquiditytypes.NewMsgWithdrawWithinBatch(accAddr, poolId, poolCoin)
 
 	if err := msg.ValidateBasic(); err != nil {
-		return &liqtypes.MsgWithdrawWithinBatch{}, err
+		return &liquiditytypes.MsgWithdrawWithinBatch{}, err
 	}
 
 	return msg, nil
@@ -91,13 +91,13 @@ func MsgSwap(poolCreator string, poolId uint64, swapTypeId uint32, offerCoin sdk
 	demandCoinDenom string, orderPrice sdktypes.Dec, swapFeeRate sdktypes.Dec) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)
 	if err != nil {
-		return &liqtypes.MsgSwapWithinBatch{}, err
+		return &liquiditytypes.MsgSwapWithinBatch{}, err
 	}
 
-	msg := liqtypes.NewMsgSwapWithinBatch(accAddr, poolId, swapTypeId, offerCoin, demandCoinDenom, orderPrice, swapFeeRate)
+	msg := liquiditytypes.NewMsgSwapWithinBatch(accAddr, poolId, swapTypeId, offerCoin, demandCoinDenom, orderPrice, swapFeeRate)
 
 	if err := msg.ValidateBasic(); err != nil {
-		return &liqtypes.MsgSwapWithinBatch{}, err
+		return &liquiditytypes.MsgSwapWithinBatch{}, err
 	}
 
 	return msg, nil
@@ -139,8 +139,6 @@ func (t *Transaction) SignAndBroadcast(ctx context.Context, accAddr string,
 		Sequence:      account.GetSequence(),
 	}
 
-	log.Debug().Msg("signing message with private key")
-
 	sigV2, err = sdkclienttx.SignWithPrivKey(signMode, signerData, txBuilder, privKey, t.Client.CliCtx.TxConfig, account.GetSequence())
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign with private key: %s", err)
@@ -158,10 +156,18 @@ func (t *Transaction) SignAndBroadcast(ctx context.Context, accAddr string,
 
 	log.Debug().Msg("broadcasting transaction")
 
-	res, err := t.Client.GRPC.BroadcastTx(txBytes)
+	resp, err := t.Client.GRPC.BroadcastTx(txBytes)
 	if err != nil {
 		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to broadcast transaction: %s", err)
 	}
 
-	return res, nil
+	log.Debug().
+		Uint32("code", resp.TxResponse.Code).
+		Str("codespace", resp.TxResponse.Codespace).
+		Int64("height", resp.TxResponse.Height).
+		Str("hash", resp.TxResponse.TxHash).
+		Str("timespace", resp.TxResponse.Timestamp).
+		Msg("result")
+
+	return resp, nil
 }
