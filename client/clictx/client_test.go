@@ -14,13 +14,13 @@ import (
 var (
 	c *clictx.Client
 
-	rpcURL = "http://localhost:26657"
+	rpcAddress = "http://localhost:26657"
 )
 
 func TestMain(m *testing.M) {
 	codec.SetCodec()
 
-	c = clictx.NewClient(rpcURL, rpc.NewClient(rpcURL, 5))
+	c = clictx.NewClient(rpcAddress, rpc.NewClient(rpcAddress, 5))
 
 	os.Exit(m.Run())
 }

@@ -9,15 +9,13 @@ import (
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
 )
 
-// Client wraps Cosmos SDK client context
+// Client wraps Cosmos SDK client context.
 type Client struct {
 	sdkclient.Context
 }
 
-// NewClient creates Cosmos SDK client
+// NewClient creates Cosmos SDK client.
 func NewClient(rpcURL string, rpcClient rpcclient.Client) *Client {
-	codec.SetCodec()
-
 	cliCtx := sdkclient.Context{}.
 		WithNodeURI(rpcURL).
 		WithClient(rpcClient).

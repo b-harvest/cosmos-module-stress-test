@@ -14,13 +14,13 @@ import (
 var (
 	c *rpc.Client
 
-	rpcURL = "http://localhost:26657"
+	rpcAddress = "http://localhost:26657"
 )
 
 func TestMain(m *testing.M) {
 	codec.SetCodec()
 
-	c = rpc.NewClient(rpcURL, 5)
+	c = rpc.NewClient(rpcAddress, 5)
 
 	os.Exit(m.Run())
 }

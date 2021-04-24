@@ -9,12 +9,12 @@ import (
 	tmctypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-// Client wraps RPC client connection
+// Client wraps RPC client connection.
 type Client struct {
 	rpcclient.Client
 }
 
-// NewClient creates RPC client
+// NewClient creates RPC client.
 func NewClient(rpcURL string, timeout int64) *Client {
 	rpcClient, err := rpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout))
 	if err != nil {
@@ -24,7 +24,7 @@ func NewClient(rpcURL string, timeout int64) *Client {
 	return &Client{rpcClient}
 }
 
-// GetNetworkChainID returns network chain id
+// GetNetworkChainID returns network chain id.
 func (c *Client) GetNetworkChainID(ctx context.Context) (string, error) {
 	status, err := c.Status(ctx)
 	if err != nil {
@@ -34,7 +34,7 @@ func (c *Client) GetNetworkChainID(ctx context.Context) (string, error) {
 	return status.NodeInfo.Network, nil
 }
 
-// GetStatus returns the status of the blockchain network
+// GetStatus returns the status of the blockchain network.
 func (c *Client) GetStatus(ctx context.Context) (*tmctypes.ResultStatus, error) {
 	return c.Status(ctx)
 }

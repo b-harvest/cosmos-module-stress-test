@@ -11,13 +11,13 @@ import (
 var (
 	c *grpc.Client
 
-	grpcURL = "localhost:9090"
+	grpcAddress = "localhost:9090"
 )
 
 func TestMain(m *testing.M) {
 	codec.SetCodec()
 
-	c = grpc.NewClient(grpcURL, 5)
+	c = grpc.NewClient(grpcAddress, 5)
 
 	os.Exit(m.Run())
 }

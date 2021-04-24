@@ -20,7 +20,7 @@ func (c *Client) BroadcastTx(txBytes []byte) (*tx.BroadcastTxResponse, error) {
 	defer cancel()
 
 	qr := &tx.BroadcastTxRequest{
-		TxBytes: txBytes, // raw transaction
+		TxBytes: txBytes,
 		Mode:    tx.BroadcastMode_BROADCAST_MODE_ASYNC,
 	}
 

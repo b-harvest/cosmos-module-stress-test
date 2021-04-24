@@ -6,6 +6,7 @@ import (
 	"github.com/b-harvest/liquidity-stress-test/client/clictx"
 	"github.com/b-harvest/liquidity-stress-test/client/grpc"
 	"github.com/b-harvest/liquidity-stress-test/client/rpc"
+	"github.com/b-harvest/liquidity-stress-test/codec"
 )
 
 // Client is a wrapper for various clients.
@@ -17,6 +18,8 @@ type Client struct {
 
 // NewClient creates a new Client with the given configuration.
 func NewClient(rpcURL string, grpcURL string) *Client {
+	codec.SetCodec()
+
 	rpcClient := rpc.NewClient(rpcURL, 5)
 	cliCtx := clictx.NewClient(rpcURL, rpcClient.Client)
 	grpcClient := grpc.NewClient(grpcURL, 5)
