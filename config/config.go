@@ -62,6 +62,8 @@ func Read(configPath string) (*Config, error) {
 func ParseString(configData []byte) (*Config, error) {
 	var cfg Config
 
+	log.Debug().Msg("parsing config data")
+
 	err := toml.Unmarshal(configData, &cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode config: %s", err)
