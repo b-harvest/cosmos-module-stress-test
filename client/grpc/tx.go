@@ -21,7 +21,8 @@ func (c *Client) BroadcastTx(txBytes []byte) (*tx.BroadcastTxResponse, error) {
 
 	qr := &tx.BroadcastTxRequest{
 		TxBytes: txBytes,
-		Mode:    tx.BroadcastMode_BROADCAST_MODE_ASYNC,
+		Mode:    tx.BroadcastMode_BROADCAST_MODE_BLOCK,
+		// Mode:    tx.BroadcastMode_BROADCAST_MODE_ASYNC,
 	}
 
 	return txClient.BroadcastTx(ctx, qr)
