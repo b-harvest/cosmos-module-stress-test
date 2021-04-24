@@ -16,12 +16,6 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 )
 
-/*
-	1. CreatePool은 MultiMsg로 한방에
-	2. user1: Deposit, withdraw
-	3. user2: Swap
-*/
-
 var (
 	configPath = "./config.toml"
 
