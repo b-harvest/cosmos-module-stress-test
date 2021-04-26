@@ -37,7 +37,7 @@ func CreatePoolCmd() *cobra.Command {
 			switch logFormat {
 			case logLevelJSON:
 			case logLevelText:
-				// Human-readable pretty logging is the default logging format
+				// human-readable pretty logging is the default logging format
 				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 			default:
 				return fmt.Errorf("invalid logging format: %s", logFormat)
@@ -124,11 +124,11 @@ func CreatePoolCmd() *cobra.Command {
 				}
 
 				log.Debug().
-					Str("total number of messages", fmt.Sprintf("%d", len(msgs))).
+					Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
 					Uint32("code", resp.TxResponse.Code).
 					Int64("height", resp.TxResponse.Height).
 					Str("hash", resp.TxResponse.TxHash).
-					Msg("createpool tester result")
+					Msg("create-pool tester result")
 
 				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
 			}
