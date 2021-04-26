@@ -49,6 +49,8 @@ func DepositCmd() *cobra.Command {
 
 			client := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
 
+			defer client.Stop() // nolint: errcheck
+
 			chainID, err := client.RPC.GetNetworkChainID(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to get chain id: %s", err)

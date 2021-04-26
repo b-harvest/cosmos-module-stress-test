@@ -25,6 +25,8 @@ var (
 		add flag to give how many times to loop over making deposits
 		add flag to give how many times to loop over making withdrawals
 		add flag to give how many times to loop over making swaps
+
+		maybe take out amounts variables when creating  pool and making deposits, withdrawals, and swaps?
 */
 
 // RootCmd creates a new root command for tester. It is called once in the main function.

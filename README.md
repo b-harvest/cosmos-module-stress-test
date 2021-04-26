@@ -69,7 +69,6 @@ This program performs stress testing for the liquidity module. This will help to
 ```
 
 ## Usage
-
 ### Build
 
 ```bash
