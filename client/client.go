@@ -45,3 +45,17 @@ func (c *Client) GetRPCClient() *rpc.Client {
 func (c *Client) GetGRPCClient() *grpc.Client {
 	return c.GRPC
 }
+
+// Stop defers the node stop execution to the RPC and GRPC clients.
+func (c Client) Stop() error {
+	err := c.RPC.Stop()
+	if err != nil {
+		return err
+	}
+
+	err = c.GRPC.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}

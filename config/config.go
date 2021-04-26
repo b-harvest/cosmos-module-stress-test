@@ -9,6 +9,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var (
+	DefaultConfigPath = "./config.toml"
+)
+
 // Config defines all necessary configuration parameters.
 type Config struct {
 	RPC  *RPCConfig  `toml:"rpc"`
