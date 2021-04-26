@@ -14,16 +14,15 @@ func (c *Client) GetTxClient() tx.ServiceClient {
 
 // BroadcastTx broadcasts transaction.
 func (c *Client) BroadcastTx(txBytes []byte) (*tx.BroadcastTxResponse, error) {
-	txClient := c.GetTxClient()
+	client := c.GetTxClient()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	qr := &tx.BroadcastTxRequest{
+	req := &tx.BroadcastTxRequest{
 		TxBytes: txBytes,
 		Mode:    tx.BroadcastMode_BROADCAST_MODE_BLOCK,
-		// Mode:    tx.BroadcastMode_BROADCAST_MODE_ASYNC,
 	}
 
-	return txClient.BroadcastTx(ctx, qr)
+	return client.BroadcastTx(ctx, req)
 }

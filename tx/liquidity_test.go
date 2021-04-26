@@ -1,4 +1,4 @@
-package transaction_test
+package tx_test
 
 import (
 	"os"

@@ -13,19 +13,19 @@ func (c *Client) GetAuthQueryClient() authtypes.QueryClient {
 
 // GetBaseAccountInfo returns base account information
 func (c *Client) GetBaseAccountInfo(ctx context.Context, address string) (authtypes.BaseAccount, error) {
-	authClient := c.GetAuthQueryClient()
+	client := c.GetAuthQueryClient()
 
-	qr := authtypes.QueryAccountRequest{
+	req := authtypes.QueryAccountRequest{
 		Address: address,
 	}
 
-	authRes, err := authClient.Account(ctx, &qr)
+	resp, err := client.Account(ctx, &req)
 	if err != nil {
 		return authtypes.BaseAccount{}, err
 	}
 
 	var acc authtypes.BaseAccount
-	err = acc.Unmarshal(authRes.GetAccount().Value)
+	err = acc.Unmarshal(resp.GetAccount().Value)
 	if err != nil {
 		return authtypes.BaseAccount{}, err
 	}

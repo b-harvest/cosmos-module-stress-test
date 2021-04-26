@@ -1,4 +1,4 @@
-package transaction
+package tx
 
 import (
 	"context"
@@ -16,6 +16,12 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 
 	"github.com/rs/zerolog/log"
+)
+
+var (
+	DefaultFees     = sdktypes.NewCoins(sdktypes.NewCoin("stake", sdktypes.NewInt(0)))
+	DefaultGasLimit = uint64(100000000)
+	DefaultMemo     = ""
 )
 
 // Transaction is an object that has common fields for signing a transaction.
@@ -160,14 +166,6 @@ func (t *Transaction) SignAndBroadcast(ctx context.Context, accAddr string,
 	if err != nil {
 		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to broadcast transaction: %s", err)
 	}
-
-	log.Debug().
-		Uint32("code", resp.TxResponse.Code).
-		Str("codespace", resp.TxResponse.Codespace).
-		Int64("height", resp.TxResponse.Height).
-		Str("hash", resp.TxResponse.TxHash).
-		Str("timespace", resp.TxResponse.Timestamp).
-		Msg("result")
 
 	return resp, nil
 }

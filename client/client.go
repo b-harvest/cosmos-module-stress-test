@@ -21,8 +21,8 @@ func NewClient(rpcURL string, grpcURL string) *Client {
 	codec.SetCodec()
 
 	rpcClient := rpc.NewClient(rpcURL, 5)
-	cliCtx := clictx.NewClient(rpcURL, rpcClient.Client)
 	grpcClient := grpc.NewClient(grpcURL, 5)
+	cliCtx := clictx.NewClient(rpcURL, rpcClient.Client)
 
 	return &Client{
 		CliCtx: cliCtx,
@@ -36,7 +36,7 @@ func (c *Client) GetCLIContext() sdkclient.Context {
 	return c.CliCtx.Context
 }
 
-// GetRPCClient returns RPC client
+// GetRPCClient returns RPC client.
 func (c *Client) GetRPCClient() *rpc.Client {
 	return c.RPC
 }

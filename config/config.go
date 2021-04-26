@@ -23,8 +23,7 @@ type RPCConfig struct {
 
 // GRPCConfig contains the configuration of the gRPC endpoint.
 type GRPCConfig struct {
-	Address  string `toml:"address"`
-	Insecure bool   `toml:"insecure"`
+	Address string `toml:"address"`
 }
 
 // LCDConfig contains the configuration of the REST server endpoint.
@@ -33,11 +32,11 @@ type LCDConfig struct {
 }
 
 // NewConfig builds a new Config instance
-func NewConfig(RPC *RPCConfig, GRPC *GRPCConfig, LCD *LCDConfig) *Config {
+func NewConfig(rpc *RPCConfig, gRPC *GRPCConfig, lcd *LCDConfig) *Config {
 	return &Config{
-		RPC:  RPC,
-		GRPC: GRPC,
-		LCD:  LCD,
+		RPC:  rpc,
+		GRPC: gRPC,
+		LCD:  lcd,
 	}
 }
 
@@ -47,7 +46,7 @@ func Read(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("empty configuration path")
 	}
 
-	log.Debug().Msg("reading config file")
+	log.Debug().Msgf("reading config file: %s", configPath)
 
 	configData, err := ioutil.ReadFile(configPath)
 	if err != nil {
