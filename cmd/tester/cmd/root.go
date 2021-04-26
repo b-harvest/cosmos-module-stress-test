@@ -15,9 +15,9 @@ var (
 	logFormat string
 
 	createPoolTester = "guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
-	depositTester    = ""
-	withdrawTester   = ""
-	swapTester       = ""
+	depositTester    = "friend excite rough reopen cover wheel spoon convince island path clean monkey play snow number walnut pull lock shoot hurry dream divide concert discover"
+	withdrawTester   = "guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
+	swapTester       = "melody lonely cube ball ritual jump fabric pull pupil kit credit filter acid used festival salmon muscle first meat aisle bubble vote gorilla judge"
 )
 
 // RootCmd creates a new root command for tester. It is called once in the main function.
@@ -27,8 +27,8 @@ func RootCmd() *cobra.Command {
 		Short: "liquidity stress testing program",
 	}
 
-	cmd.PersistentFlags().StringVar(&logLevel, "log-level", zerolog.DebugLevel.String(), "logging level")
-	cmd.PersistentFlags().StringVar(&logFormat, "log-format", logLevelText, "logging format; must be either json or text")
+	cmd.PersistentFlags().StringVar(&logLevel, "log-level", zerolog.DebugLevel.String(), "logging level; default is debug")
+	cmd.PersistentFlags().StringVar(&logFormat, "log-format", logLevelText, "logging format; must be either json or text; default is text")
 
 	cmd.AddCommand(CreatePoolCmd())
 	cmd.AddCommand(DepositCmd())
