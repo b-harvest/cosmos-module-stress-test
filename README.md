@@ -75,11 +75,37 @@ This program performs stress testing for the liquidity module. This will help to
 # Clone the project
 git clone https://github.com/b-harvest/liquidity-stress-test.git
 cd liquidity-stress-test
-make build
+make install
 ```
 
 ### Setup local testnet
+
+Just by running `make localnet`, this will bootstrap a single local node in your local computer and 
+automatically create 4 genesis accounts with enough amounts of different types of coins. If you need more or less accounts and the other types of coins, feel free to change [the script](https://github.com/b-harvest/liquidity-stress-test/blob/main/scripts/localnet.sh#L9-L13) for your own usage.
+
 ```bash
-# Run a single blockchain in your local computer
+# Run a single blockchain in your local computer 
 make localnet
+```
+
+### CLI Commands
+
+`$ tester -h`
+```bash
+liquidity stress testing program
+
+Usage:
+  tester [command]
+
+Available Commands:
+  create-pool create liquidity pools of every pair of coins exist in the network.
+  deposit     deposit new coins to every existing pools.
+  help        Help about any command
+  swap        swap some coins from the exisiting pools.
+  withdraw    withdraw coins from every existing pools.
+
+Flags:
+  -h, --help                help for tester
+      --log-format string   logging format; must be either json or text; (default "text")
+      --log-level string    logging level; (default "debug")
 ```
