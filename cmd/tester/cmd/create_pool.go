@@ -12,6 +12,8 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
+	liqtypes "github.com/tendermint/liquidity/x/liquidity/types"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -24,8 +26,8 @@ import (
 func CreatePoolCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "create-pool",
-		Aliases: []string{"create", "c", "cp"},
 		Short:   "create liquidity pools of every pair of coins exist in the network.",
+		Aliases: []string{"create", "c", "cp"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
 			if err != nil {
@@ -51,6 +53,7 @@ func CreatePoolCmd() *cobra.Command {
 			}
 
 			client := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+
 			defer client.Stop() // nolint: errcheck
 
 			chainID, err := client.RPC.GetNetworkChainID(ctx)
@@ -70,7 +73,7 @@ func CreatePoolCmd() *cobra.Command {
 				depositCoinB sdktypes.Int
 			}{
 				{
-					uint32(1),
+					liqtypes.DefaultPoolTypeId,
 					[]string{
 						"uakt",
 						"uatom",

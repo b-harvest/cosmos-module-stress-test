@@ -12,6 +12,8 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
+	liqtypes "github.com/tendermint/liquidity/x/liquidity/types"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -21,8 +23,8 @@ import (
 func SwapCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "swap",
-		Aliases: []string{"s"},
 		Short:   "swap some coins from the exisiting pools.",
+		Aliases: []string{"s"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
 			if err != nil {
@@ -69,7 +71,7 @@ func SwapCmd() *cobra.Command {
 			var msgs []sdktypes.Msg
 
 			for _, pool := range pools {
-				swapTypeId := uint32(1)
+				swapTypeId := liqtypes.DefaultSwapTypeId
 				offerCoin := sdktypes.NewCoin(pool.ReserveCoinDenoms[0], sdktypes.NewInt(50_000_000))
 				demandCoinDenom := pool.ReserveCoinDenoms[1]
 				orderPrice := sdktypes.NewDecWithPrec(19, 3)
