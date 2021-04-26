@@ -145,6 +145,8 @@ func (t *Transaction) SignAndBroadcast(ctx context.Context, accAddr string,
 		Sequence:      account.GetSequence(),
 	}
 
+	log.Debug().Msg("signing transaction")
+
 	sigV2, err = sdkclienttx.SignWithPrivKey(signMode, signerData, txBuilder, privKey, t.Client.CliCtx.TxConfig, account.GetSequence())
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign with private key: %s", err)

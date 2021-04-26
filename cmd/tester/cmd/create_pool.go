@@ -130,10 +130,6 @@ func CreatePoolCmd() *cobra.Command {
 					Str("hash", resp.TxResponse.TxHash).
 					Msg("createpool tester result")
 
-				if resp.TxResponse.Code != 0 {
-					log.Info().Msg("broadcasting transaction failed")
-				}
-
 				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
 			}
 
