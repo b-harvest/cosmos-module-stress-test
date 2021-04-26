@@ -20,6 +20,13 @@ var (
 	swapTester       = "melody lonely cube ball ritual jump fabric pull pupil kit credit filter acid used festival salmon muscle first meat aisle bubble vote gorilla judge"
 )
 
+/*
+	TODO:
+		add flag to give how many times to loop over making deposits
+		add flag to give how many times to loop over making withdrawals
+		add flag to give how many times to loop over making swaps
+*/
+
 // RootCmd creates a new root command for tester. It is called once in the main function.
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -27,8 +34,8 @@ func RootCmd() *cobra.Command {
 		Short: "liquidity stress testing program",
 	}
 
-	cmd.PersistentFlags().StringVar(&logLevel, "log-level", zerolog.DebugLevel.String(), "logging level; default is debug")
-	cmd.PersistentFlags().StringVar(&logFormat, "log-format", logLevelText, "logging format; must be either json or text; default is text")
+	cmd.PersistentFlags().StringVar(&logLevel, "log-level", zerolog.DebugLevel.String(), "logging level;")
+	cmd.PersistentFlags().StringVar(&logFormat, "log-format", logLevelText, "logging format; must be either json or text;")
 
 	cmd.AddCommand(CreatePoolCmd())
 	cmd.AddCommand(DepositCmd())

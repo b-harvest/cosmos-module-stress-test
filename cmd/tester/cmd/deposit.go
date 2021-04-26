@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// flag to give how many times to for loop making deposits
 func DepositCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "deposit",

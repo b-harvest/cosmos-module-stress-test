@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: flag to give how many times to for loop making deposits
 func WithdrawCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "withdraw",
@@ -68,7 +67,7 @@ func WithdrawCmd() *cobra.Command {
 			var msgs []sdktypes.Msg
 
 			for _, pool := range pools {
-				poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, sdktypes.NewInt(1))
+				poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, sdktypes.NewInt(5))
 
 				msg, err := tx.MsgWithdraw(accAddr, pool.GetPoolId(), poolCoin)
 				if err != nil {
