@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 	"github.com/b-harvest/liquidity-stress-test/config"
@@ -22,9 +24,10 @@ import (
 
 func SwapCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "swap",
+		Use:     "swap [count]",
 		Short:   "swap some coins from the exisiting pools.",
 		Aliases: []string{"s"},
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
 			if err != nil {
@@ -68,39 +71,48 @@ func SwapCmd() *cobra.Command {
 				return fmt.Errorf("failed to get all liquidity pools: %s", err)
 			}
 
-			var msgs []sdktypes.Msg
-
-			for _, pool := range pools {
-				swapTypeId := liqtypes.DefaultSwapTypeId
-				offerCoin := sdktypes.NewCoin(pool.ReserveCoinDenoms[0], sdktypes.NewInt(50_000_000))
-				demandCoinDenom := pool.ReserveCoinDenoms[1]
-				orderPrice := sdktypes.NewDecWithPrec(19, 3)
-				swapFeeRate := sdktypes.NewDecWithPrec(3, 3)
-
-				msg, err := tx.MsgSwap(accAddr, pool.GetPoolId(), swapTypeId, offerCoin, demandCoinDenom, orderPrice, swapFeeRate)
-				if err != nil {
-					return fmt.Errorf("failed to create msg: %s", err)
-				}
-				msgs = append(msgs, msg)
-			}
-
-			tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
-
-			resp, err := tx.SignAndBroadcast(ctx, accAddr, privKey, msgs...)
+			count, err := strconv.Atoi(args[0])
 			if err != nil {
-				return fmt.Errorf("failed to sign and broadcast: %s", err)
+				return fmt.Errorf("count must be integer: %s", args[0])
 			}
 
-			log.Debug().
-				Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
-				Uint32("code", resp.TxResponse.Code).
-				Int64("height", resp.TxResponse.Height).
-				Str("hash", resp.TxResponse.TxHash).
-				Msg("deposit tester result")
+			for i := 0; i < count; i++ {
+				var msgs []sdktypes.Msg
 
-			log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
+				for _, pool := range pools {
+					swapTypeId := liqtypes.DefaultSwapTypeId
+					offerCoin := sdktypes.NewCoin(pool.ReserveCoinDenoms[0], tx.DefaultSwapOfferCoin)
+					demandCoinDenom := pool.ReserveCoinDenoms[1]
+					orderPrice := sdktypes.NewDecWithPrec(19, 3)
+					swapFeeRate := sdktypes.NewDecWithPrec(3, 3)
 
-			return nil
+					msg, err := tx.MsgSwap(accAddr, pool.GetPoolId(), swapTypeId, offerCoin, demandCoinDenom, orderPrice, swapFeeRate)
+					if err != nil {
+						return fmt.Errorf("failed to create msg: %s", err)
+					}
+					msgs = append(msgs, msg)
+				}
+
+				tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+
+				resp, err := tx.SignAndBroadcast(ctx, accAddr, privKey, msgs...)
+				if err != nil {
+					return fmt.Errorf("failed to sign and broadcast: %s", err)
+				}
+
+				log.Debug().
+					Int("count", i).
+					Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
+					Uint32("code", resp.TxResponse.Code).
+					Int64("height", resp.TxResponse.Height).
+					Str("hash", resp.TxResponse.TxHash).
+					Msg("deposit tester result")
+
+				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
+
+				time.Sleep(5 * time.Second)
+			}
+
 			return nil
 		},
 	}

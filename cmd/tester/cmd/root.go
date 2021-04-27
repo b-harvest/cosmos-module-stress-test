@@ -20,15 +20,6 @@ var (
 	swapTester       = "melody lonely cube ball ritual jump fabric pull pupil kit credit filter acid used festival salmon muscle first meat aisle bubble vote gorilla judge"
 )
 
-/*
-	TODO:
-		add flag to give how many times to loop over making deposits
-		add flag to give how many times to loop over making withdrawals
-		add flag to give how many times to loop over making swaps
-
-		maybe take out amounts variables when creating  pool and making deposits, withdrawals, and swaps?
-*/
-
 // RootCmd creates a new root command for tester. It is called once in the main function.
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{

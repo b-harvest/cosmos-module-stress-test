@@ -19,6 +19,13 @@ import (
 )
 
 var (
+	DefaultCreatePoolDepositCoinA = sdktypes.NewInt(50_000_000_000)
+	DefaultCreatePoolDepositCoinB = sdktypes.NewInt(50_000_000_000)
+	DefaultDepositCoinA           = sdktypes.NewInt(5000000)
+	DefaultDepositCoinB           = sdktypes.NewInt(5000000)
+	DefaultWithdrawPoolCoinA      = sdktypes.NewInt(50)
+	DefaultSwapOfferCoin          = sdktypes.NewInt(50_000_000)
+
 	DefaultFees     = sdktypes.NewCoins(sdktypes.NewCoin("stake", sdktypes.NewInt(0)))
 	DefaultGasLimit = uint64(100000000)
 	DefaultMemo     = ""

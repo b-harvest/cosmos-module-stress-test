@@ -50,7 +50,7 @@ func Read(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("empty configuration path")
 	}
 
-	log.Debug().Msgf("reading config file: %s", configPath)
+	log.Debug().Msg("reading config file")
 
 	configData, err := ioutil.ReadFile(configPath)
 	if err != nil {

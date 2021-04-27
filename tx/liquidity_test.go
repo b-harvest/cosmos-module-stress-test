@@ -80,7 +80,7 @@ func TestDepositWithinBatch(t *testing.T) {
 			accAddr,
 			privKey,
 			uint64(1),
-			sdktypes.NewCoins(sdktypes.NewCoin("uakt", sdktypes.NewInt(33333)), sdktypes.NewCoin("uatom", sdktypes.NewInt(33333))),
+			sdktypes.NewCoins(sdktypes.NewCoin("uakt", sdktypes.NewInt(5000000)), sdktypes.NewCoin("uatom", sdktypes.NewInt(5000000))),
 		},
 	}
 
@@ -124,7 +124,7 @@ func TestWithdrawWithinBatch(t *testing.T) {
 			accAddr,
 			privKey,
 			uint64(1),
-			sdktypes.NewCoin("pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF27752", sdktypes.NewInt(5)),
+			sdktypes.NewCoin("pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF27752", sdktypes.NewInt(50)),
 		},
 	}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 	"github.com/b-harvest/liquidity-stress-test/config"
@@ -20,9 +22,10 @@ import (
 
 func WithdrawCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "withdraw",
-		Aliases: []string{"w"},
+		Use:     "withdraw [count]",
 		Short:   "withdraw coins from every existing pools.",
+		Aliases: []string{"w"},
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
 			if err != nil {
@@ -66,33 +69,43 @@ func WithdrawCmd() *cobra.Command {
 				return fmt.Errorf("failed to get all liquidity pools: %s", err)
 			}
 
-			var msgs []sdktypes.Msg
-
-			for _, pool := range pools {
-				poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, sdktypes.NewInt(5))
-
-				msg, err := tx.MsgWithdraw(accAddr, pool.GetPoolId(), poolCoin)
-				if err != nil {
-					return fmt.Errorf("failed to create msg: %s", err)
-				}
-				msgs = append(msgs, msg)
-			}
-
-			tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
-
-			resp, err := tx.SignAndBroadcast(ctx, accAddr, privKey, msgs...)
+			count, err := strconv.Atoi(args[0])
 			if err != nil {
-				return fmt.Errorf("failed to sign and broadcast: %s", err)
+				return fmt.Errorf("count must be integer: %s", args[0])
 			}
 
-			log.Debug().
-				Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
-				Uint32("code", resp.TxResponse.Code).
-				Int64("height", resp.TxResponse.Height).
-				Str("hash", resp.TxResponse.TxHash).
-				Msg("deposit tester result")
+			for i := 0; i < count; i++ {
+				var msgs []sdktypes.Msg
 
-			log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
+				for _, pool := range pools {
+					poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, tx.DefaultWithdrawPoolCoinA)
+
+					msg, err := tx.MsgWithdraw(accAddr, pool.GetPoolId(), poolCoin)
+					if err != nil {
+						return fmt.Errorf("failed to create msg: %s", err)
+					}
+					msgs = append(msgs, msg)
+				}
+
+				tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+
+				resp, err := tx.SignAndBroadcast(ctx, accAddr, privKey, msgs...)
+				if err != nil {
+					return fmt.Errorf("failed to sign and broadcast: %s", err)
+				}
+
+				log.Debug().
+					Int("count", i).
+					Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
+					Uint32("code", resp.TxResponse.Code).
+					Int64("height", resp.TxResponse.Height).
+					Str("hash", resp.TxResponse.TxHash).
+					Msg("deposit tester result")
+
+				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
+
+				time.Sleep(5 * time.Second)
+			}
 
 			return nil
 		},
