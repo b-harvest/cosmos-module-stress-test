@@ -1,7 +1,10 @@
 package wallet_test
 
 import (
+	"fmt"
 	"testing"
+
+	bip39 "github.com/cosmos/go-bip39"
 
 	"github.com/test-go/testify/require"
 
@@ -24,6 +27,11 @@ func TestRecoverAccAddrFromMnemonic(t *testing.T) {
 			password:   "",
 			expAccAddr: "cosmos1mzgucqnfr2l8cj5apvdpllhzt4zeuh2cshz5xu",
 		},
+		{
+			mnemonic:   "friend excite rough reopen cover wheel spoon convince island path clean monkey play snow number walnut pull lock shoot hurry dream divide concert discover",
+			password:   "",
+			expAccAddr: "cosmos1mzgucqnfr2l8cj5apvdpllhzt4zeuh2cshz5xu",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -31,5 +39,23 @@ func TestRecoverAccAddrFromMnemonic(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, tc.expAccAddr, accAddr)
+	}
+}
+
+func TestNewMnemonic(t *testing.T) {
+	// number of accounts to create
+	num := int(5)
+
+	for i := 0; i < num; i++ {
+		entropy, err := bip39.NewEntropy(256)
+		require.NoError(t, err)
+
+		mnemonic, err := bip39.NewMnemonic(entropy)
+		require.NoError(t, err)
+
+		accAddr, _, err := wallet.RecoverAccountFromMnemonic(mnemonic, "")
+		require.NoError(t, err)
+
+		fmt.Println(mnemonic, accAddr)
 	}
 }
