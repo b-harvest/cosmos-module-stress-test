@@ -16,3 +16,6 @@
 
 # local blockchain data
 data
+
+# configuration file
+config.toml
