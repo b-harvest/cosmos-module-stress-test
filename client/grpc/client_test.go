@@ -17,7 +17,7 @@ var (
 func TestMain(m *testing.M) {
 	codec.SetCodec()
 
-	c = grpc.NewClient(grpcAddress, 5)
+	c, _ = grpc.NewClient(grpcAddress, 5)
 
 	os.Exit(m.Run())
 }

@@ -20,7 +20,9 @@ var (
 func TestMain(m *testing.M) {
 	codec.SetCodec()
 
-	c = clictx.NewClient(rpcAddress, rpc.NewClient(rpcAddress, 5))
+	rpcClient, _ := rpc.NewClient(rpcAddress, 5)
+
+	c = clictx.NewClient(rpcAddress, rpcClient)
 
 	os.Exit(m.Run())
 }

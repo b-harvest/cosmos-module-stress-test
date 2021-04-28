@@ -15,13 +15,13 @@ type Client struct {
 }
 
 // NewClient creates RPC client.
-func NewClient(rpcURL string, timeout int64) *Client {
+func NewClient(rpcURL string, timeout int64) (*Client, error) {
 	rpcClient, err := rpc.NewWithTimeout(rpcURL, "/websocket", uint(timeout))
 	if err != nil {
-		panic(fmt.Errorf("failed to connect RPC client: %s", err))
+		return &Client{}, fmt.Errorf("failed to connect RPC client: %s", err)
 	}
 
-	return &Client{rpcClient}
+	return &Client{rpcClient}, nil
 }
 
 // GetNetworkChainID returns network chain id.

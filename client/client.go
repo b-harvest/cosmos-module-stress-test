@@ -17,18 +17,26 @@ type Client struct {
 }
 
 // NewClient creates a new Client with the given configuration.
-func NewClient(rpcURL string, grpcURL string) *Client {
+func NewClient(rpcURL string, grpcURL string) (*Client, error) {
 	codec.SetCodec()
 
-	rpcClient := rpc.NewClient(rpcURL, 5)
-	grpcClient := grpc.NewClient(grpcURL, 5)
+	rpcClient, err := rpc.NewClient(rpcURL, 5)
+	if err != nil {
+		return &Client{}, err
+	}
+
+	grpcClient, err := grpc.NewClient(grpcURL, 5)
+	if err != nil {
+		return &Client{}, err
+	}
+
 	cliCtx := clictx.NewClient(rpcURL, rpcClient.Client)
 
 	return &Client{
 		CliCtx: cliCtx,
 		RPC:    rpcClient,
 		GRPC:   grpcClient,
-	}
+	}, nil
 }
 
 // GetCLIContext returns client context for the network.

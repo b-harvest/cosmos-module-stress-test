@@ -16,7 +16,7 @@ func (c *Client) GetTxClient() tx.ServiceClient {
 func (c *Client) BroadcastTx(txBytes []byte) (*tx.BroadcastTxResponse, error) {
 	client := c.GetTxClient()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	req := &tx.BroadcastTxRequest{

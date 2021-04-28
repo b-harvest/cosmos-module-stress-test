@@ -20,7 +20,7 @@ var (
 func TestMain(m *testing.M) {
 	codec.SetCodec()
 
-	c = rpc.NewClient(rpcAddress, 5)
+	c, _ = rpc.NewClient(rpcAddress, 5)
 
 	os.Exit(m.Run())
 }
