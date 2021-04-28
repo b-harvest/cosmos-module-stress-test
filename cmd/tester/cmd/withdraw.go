@@ -22,8 +22,8 @@ import (
 
 func WithdrawCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "withdraw [count]",
-		Short:   "withdraw coins from every existing pools.",
+		Use:     "withdraw [round]",
+		Short:   "withdraw some coins in round times with mutiple messages in all existing pools.",
 		Aliases: []string{"w"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -43,18 +43,19 @@ func WithdrawCmd() *cobra.Command {
 				return fmt.Errorf("invalid logging format: %s", logFormat)
 			}
 
-			ctx := context.Background()
-
 			cfg, err := config.Read(config.DefaultConfigPath)
 			if err != nil {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
 
-			client := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+			client, err := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+			if err != nil {
+				return fmt.Errorf("failed to connect clients: %s", err)
+			}
 
 			defer client.Stop() // nolint: errcheck
 
-			chainID, err := client.RPC.GetNetworkChainID(ctx)
+			chainID, err := client.RPC.GetNetworkChainID(context.Background())
 			if err != nil {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
@@ -64,43 +65,55 @@ func WithdrawCmd() *cobra.Command {
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}
 
-			pools, err := client.GRPC.GetAllPools(ctx)
+			pools, err := client.GRPC.GetAllPools(context.Background())
 			if err != nil {
 				return fmt.Errorf("failed to get all liquidity pools: %s", err)
 			}
 
-			count, err := strconv.Atoi(args[0])
-			if err != nil {
-				return fmt.Errorf("count must be integer: %s", args[0])
+			var msgs []sdktypes.Msg
+
+			for _, pool := range pools {
+				poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, tx.DefaultWithdrawPoolCoinA)
+
+				msg, err := tx.MsgWithdraw(accAddr, pool.GetPoolId(), poolCoin)
+				if err != nil {
+					return fmt.Errorf("failed to create msg: %s", err)
+				}
+				msgs = append(msgs, msg)
 			}
 
-			for i := 0; i < count; i++ {
-				var msgs []sdktypes.Msg
+			round, err := strconv.Atoi(args[0])
+			if err != nil {
+				return fmt.Errorf("round must be integer: %s", args[0])
+			}
 
-				for _, pool := range pools {
-					poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, tx.DefaultWithdrawPoolCoinA)
+			account, err := client.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
+			if err != nil {
+				return fmt.Errorf("failed to get account information: %s", err)
+			}
 
-					msg, err := tx.MsgWithdraw(accAddr, pool.GetPoolId(), poolCoin)
-					if err != nil {
-						return fmt.Errorf("failed to create msg: %s", err)
-					}
-					msgs = append(msgs, msg)
-				}
+			accSeq := account.GetSequence()
+			accNum := account.GetAccountNumber()
 
-				tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+			tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
 
-				resp, err := tx.SignAndBroadcast(ctx, accAddr, privKey, msgs...)
+			for i := 0; i < round; i++ {
+				resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
 				if err != nil {
 					return fmt.Errorf("failed to sign and broadcast: %s", err)
 				}
 
+				accSeq = accSeq + 1
+
 				log.Debug().
-					Int("count", i).
-					Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
+					Str("account", accAddr).
+					Uint64("account sequence", accSeq).
+					Int("round", i+1).
+					Str("number of messsages", fmt.Sprintf("%d", len(msgs))).
 					Uint32("code", resp.TxResponse.Code).
 					Int64("height", resp.TxResponse.Height).
 					Str("hash", resp.TxResponse.TxHash).
-					Msg("deposit tester result")
+					Msg("withdraw result")
 
 				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
 

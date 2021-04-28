@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 	"github.com/b-harvest/liquidity-stress-test/config"
@@ -22,8 +21,8 @@ import (
 
 func DepositCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "deposit [count]",
-		Short:   "deposit new coins to every existing pools.",
+		Use:     "deposit [round]",
+		Short:   "deposit some coins in round times with mutiple messages in all existing pools.",
 		Aliases: []string{"d"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,7 +47,10 @@ func DepositCmd() *cobra.Command {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
 
-			client := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+			client, err := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+			if err != nil {
+				return fmt.Errorf("failed to connect clients: %s", err)
+			}
 
 			defer client.Stop() // nolint: errcheck
 
@@ -67,45 +69,55 @@ func DepositCmd() *cobra.Command {
 				return fmt.Errorf("failed to get all liquidity pools: %s", err)
 			}
 
-			count, err := strconv.Atoi(args[0])
-			if err != nil {
-				return fmt.Errorf("count must be integer: %s", args[0])
+			var msgs []sdktypes.Msg
+
+			for _, pool := range pools {
+				depositCoins := sdktypes.NewCoins(
+					sdktypes.NewCoin(pool.ReserveCoinDenoms[0], tx.DefaultDepositCoinA),
+					sdktypes.NewCoin(pool.ReserveCoinDenoms[1], tx.DefaultDepositCoinB),
+				)
+
+				msg, err := tx.MsgDeposit(accAddr, pool.GetPoolId(), depositCoins)
+				if err != nil {
+					return fmt.Errorf("failed to create msg: %s", err)
+				}
+				msgs = append(msgs, msg)
 			}
 
-			for i := 0; i < count; i++ {
-				var msgs []sdktypes.Msg
+			round, err := strconv.Atoi(args[0])
+			if err != nil {
+				return fmt.Errorf("round must be integer: %s", args[0])
+			}
 
-				for _, pool := range pools {
-					depositCoins := sdktypes.NewCoins(
-						sdktypes.NewCoin(pool.ReserveCoinDenoms[0], tx.DefaultDepositCoinA),
-						sdktypes.NewCoin(pool.ReserveCoinDenoms[1], tx.DefaultDepositCoinB),
-					)
+			account, err := client.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
+			if err != nil {
+				return fmt.Errorf("failed to get account information: %s", err)
+			}
 
-					msg, err := tx.MsgDeposit(accAddr, pool.GetPoolId(), depositCoins)
-					if err != nil {
-						return fmt.Errorf("failed to create msg: %s", err)
-					}
-					msgs = append(msgs, msg)
-				}
+			accSeq := account.GetSequence()
+			accNum := account.GetAccountNumber()
 
-				tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+			tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
 
-				resp, err := tx.SignAndBroadcast(context.Background(), accAddr, privKey, msgs...)
+			for i := 0; i < round; i++ {
+				resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
 				if err != nil {
 					return fmt.Errorf("failed to sign and broadcast: %s", err)
 				}
 
+				accSeq = accSeq + 1
+
 				log.Debug().
-					Int("count", i).
-					Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
+					Str("account", accAddr).
+					Uint64("account sequence", accSeq).
+					Int("round", i+1).
+					Str("number of messsages", fmt.Sprintf("%d", len(msgs))).
 					Uint32("code", resp.TxResponse.Code).
 					Int64("height", resp.TxResponse.Height).
 					Str("hash", resp.TxResponse.TxHash).
-					Msg("deposit tester result")
+					Msg("deposit result")
 
 				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
-
-				time.Sleep(5 * time.Second)
 			}
 			return nil
 		},
