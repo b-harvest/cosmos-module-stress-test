@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
@@ -15,19 +16,6 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 
 	"github.com/rs/zerolog/log"
-)
-
-var (
-	DefaultCreatePoolDepositCoinA = sdktypes.NewInt(50_000_000_000)
-	DefaultCreatePoolDepositCoinB = sdktypes.NewInt(50_000_000_000)
-	DefaultDepositCoinA           = sdktypes.NewInt(5000000)
-	DefaultDepositCoinB           = sdktypes.NewInt(5000000)
-	DefaultWithdrawPoolCoinA      = sdktypes.NewInt(50)
-	DefaultSwapOfferCoin          = sdktypes.NewInt(50_000_000)
-
-	DefaultFees     = sdktypes.NewCoins(sdktypes.NewCoin("stake", sdktypes.NewInt(0)))
-	DefaultGasLimit = uint64(100000000)
-	DefaultMemo     = ""
 )
 
 // Transaction is an object that has common fields for signing a transaction.
@@ -162,7 +150,10 @@ func (t *Transaction) SignAndBroadcast(accSeq uint64, accNum uint64, privKey *se
 
 	log.Debug().Msg("broadcasting transaction")
 
-	resp, err := t.Client.GRPC.BroadcastTx(txBytes)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	resp, err := t.Client.GRPC.BroadcastTx(ctx, txBytes)
 	if err != nil {
 		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to broadcast transaction: %s", err)
 	}

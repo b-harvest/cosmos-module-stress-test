@@ -129,8 +129,11 @@ func CreateAllPoolsCmd() *cobra.Command {
 
 				accSeq := account.GetSequence()
 				accNum := account.GetAccountNumber()
+				gasLimit := uint64(cfg.Tx.GasLimit)
+				fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Tx.FeeDenom, sdktypes.NewInt(cfg.Tx.FeeAmount)))
+				memo := cfg.Tx.Memo
 
-				tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+				tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
 
 				resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
 				if err != nil {

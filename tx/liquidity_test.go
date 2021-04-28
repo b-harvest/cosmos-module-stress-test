@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/test-go/testify/require"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
+	"github.com/b-harvest/liquidity-stress-test/config"
 	"github.com/b-harvest/liquidity-stress-test/tx"
 	"github.com/b-harvest/liquidity-stress-test/wallet"
 
@@ -21,7 +21,8 @@ import (
 )
 
 var (
-	c *client.Client
+	c   *client.Client
+	cfg *config.Config
 
 	rpcAddress  = "http://localhost:26657"
 	grpcAddress = "localhost:9090"
@@ -29,6 +30,8 @@ var (
 
 func TestMain(m *testing.M) {
 	c, _ = client.NewClient(rpcAddress, grpcAddress)
+
+	cfg, _ = config.Read(config.DefaultConfigPath)
 
 	os.Exit(m.Run())
 }
@@ -79,7 +82,7 @@ func TestSendTxsByIncrementingSequence(t *testing.T) {
 
 	msgs := []sdktypes.Msg{msg}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	for i := 0; i < 1; i++ {
@@ -89,11 +92,14 @@ func TestSendTxsByIncrementingSequence(t *testing.T) {
 		accSeq := account.GetSequence()
 		accNum := account.GetAccountNumber()
 
+		gasLimit := uint64(100000000)
+		fees := sdktypes.NewCoins(sdktypes.NewCoin("stake", sdktypes.NewInt(0)))
+
 		txBuilder := c.CliCtx.TxConfig.NewTxBuilder()
 		txBuilder.SetMsgs(msgs...)
-		txBuilder.SetGasLimit(tx.DefaultGasLimit)
-		txBuilder.SetFeeAmount(tx.DefaultFees)
-		txBuilder.SetMemo(tx.DefaultMemo)
+		txBuilder.SetGasLimit(gasLimit)
+		txBuilder.SetFeeAmount(fees)
+		txBuilder.SetMemo("")
 
 		signMode := c.CliCtx.TxConfig.SignModeHandler().DefaultMode()
 
@@ -127,7 +133,10 @@ func TestSendTxsByIncrementingSequence(t *testing.T) {
 			txBytes, err := c.CliCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
 			require.NoError(t, err)
 
-			resp, err := c.GRPC.BroadcastTx(txBytes)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			resp, err := c.GRPC.BroadcastTx(ctx, txBytes)
 			require.NoError(t, err)
 
 			fmt.Println("AccSeq: ", accSeq)
@@ -174,7 +183,11 @@ func TestDepositWithinBatch(t *testing.T) {
 
 			msgs := []sdktypes.Msg{msg}
 
-			tx := tx.NewTransaction(c, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+			gasLimit := uint64(100000000)
+			fees := sdktypes.NewCoins(sdktypes.NewCoin("stake", sdktypes.NewInt(0)))
+			memo := ""
+
+			tx := tx.NewTransaction(c, chainID, gasLimit, fees, memo)
 
 			account, err := c.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
 			require.NoError(t, err)
@@ -224,7 +237,11 @@ func TestWithdrawWithinBatch(t *testing.T) {
 
 			msgs := []sdktypes.Msg{msg}
 
-			tx := tx.NewTransaction(c, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+			gasLimit := uint64(100000000)
+			fees := sdktypes.NewCoins(sdktypes.NewCoin("stake", sdktypes.NewInt(0)))
+			memo := ""
+
+			tx := tx.NewTransaction(c, chainID, gasLimit, fees, memo)
 
 			account, err := c.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
 			require.NoError(t, err)

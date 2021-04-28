@@ -97,7 +97,11 @@ func DepositCmd() *cobra.Command {
 			accSeq := account.GetSequence()
 			accNum := account.GetAccountNumber()
 
-			tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
+			gasLimit := uint64(cfg.Tx.GasLimit)
+			fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Tx.FeeDenom, sdktypes.NewInt(cfg.Tx.FeeAmount)))
+			memo := cfg.Tx.Memo
+
+			tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
 
 			for i := 0; i < round; i++ {
 				resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)

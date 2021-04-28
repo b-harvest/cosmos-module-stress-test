@@ -41,6 +41,12 @@ create_pool = [50000000000,50000000000]
 deposit = [5000000,5000000]
 withdraw = 50
 swap = 50000000
+
+[tx]
+gas_limit = 100000000
+fee_denom = "stake"
+fee_amount = 0
+memo = ""
 `
 	cfg, err := config.ParseString([]byte(sampleConfig))
 	require.NoError(t, err)

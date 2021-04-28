@@ -20,6 +20,7 @@ type Config struct {
 	LCD      *LCDConfig      `toml:"lcd"`
 	Accounts *AccountsConfig `toml:"accounts"`
 	Amounts  *AmountsConfig  `toml:"amounts"`
+	Tx       *TxConfig       `toml:"tx"`
 }
 
 // RPCConfig contains the configuration of the RPC endpoint.
@@ -53,7 +54,15 @@ type AmountsConfig struct {
 	Swap       int64   `toml:"swap"`
 }
 
-// NewConfig builds a new Config instance
+// TxConfig contains the transaction configuration.
+type TxConfig struct {
+	GasLimit  int64  `toml:"gas_limit"`
+	FeeDenom  string `toml:"fee_denom"`
+	FeeAmount int64  `toml:"fee_amount"`
+	Memo      string `toml:"memo"`
+}
+
+// NewConfig builds a new Config instance.
 func NewConfig(rpc *RPCConfig, gRPC *GRPCConfig, lcd *LCDConfig) *Config {
 	return &Config{
 		RPC:  rpc,
