@@ -22,13 +22,16 @@ import (
 
 func WithdrawCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "withdraw [pool-id] [pool-coin] [round] [msg-num]",
+		Use:     "withdraw [pool-id] [pool-coin] [round] [tx-num]",
 		Short:   "withdraw pool coin from the pool in round times with a number of transaction messages",
 		Aliases: []string{"w"},
 		Args:    cobra.ExactArgs(4),
 		Long: `Withdraw pool coin from the pool in round times with a number of transaction message.
 
 Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF27752 10 10
+
+[round]: how many rounds to run
+[tx-num]: how many transactions to be included in one round
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
@@ -88,7 +91,7 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 				return fmt.Errorf("round must be integer: %s", args[0])
 			}
 
-			msgNum, err := strconv.Atoi(args[3])
+			txNum, err := strconv.Atoi(args[3])
 			if err != nil {
 				return fmt.Errorf("txNum must be integer: %s", args[0])
 			}
@@ -122,7 +125,7 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 
 				var txBytes [][]byte
 
-				for i := 0; i < msgNum; i++ {
+				for i := 0; i < txNum; i++ {
 					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
 					if err != nil {
 						return fmt.Errorf("failed to sign and broadcast: %s", err)
@@ -133,7 +136,7 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 					txBytes = append(txBytes, txByte)
 				}
 
-				log.Info().Msgf("round:%d; msgNum:%d; accAddr:%s", i+1, msgNum, accAddr)
+				log.Info().Msgf("round:%d; txNum:%d; accAddr:%s", i+1, txNum, accAddr)
 
 				for _, txByte := range txBytes {
 					resp, err := client.GRPC.BroadcastTx(ctx, txByte)

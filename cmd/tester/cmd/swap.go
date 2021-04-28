@@ -22,13 +22,16 @@ import (
 
 func SwapCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "swap [pool-id] [offer-coin] [demand-coin-denom] [order-price] [round] [msg-num]",
+		Use:     "swap [pool-id] [offer-coin] [demand-coin-denom] [order-price] [round] [tx-num]",
 		Short:   "swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of transaction messages",
 		Aliases: []string{"s"},
 		Args:    cobra.ExactArgs(6),
 		Long: `Swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of transaction messages.
 
 Example: $tester s 1 50000000uakt uatom 0.019 10 10 
+
+[round]: how many rounds to run
+[tx-num]: how many transactions to be included in one round
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
@@ -97,7 +100,7 @@ Example: $tester s 1 50000000uakt uatom 0.019 10 10
 				return fmt.Errorf("round must be integer: %s", args[0])
 			}
 
-			msgNum, err := strconv.Atoi(args[5])
+			txNum, err := strconv.Atoi(args[5])
 			if err != nil {
 				return fmt.Errorf("txNum must be integer: %s", args[0])
 			}
@@ -131,7 +134,7 @@ Example: $tester s 1 50000000uakt uatom 0.019 10 10
 
 				var txBytes [][]byte
 
-				for i := 0; i < msgNum; i++ {
+				for i := 0; i < txNum; i++ {
 					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
 					if err != nil {
 						return fmt.Errorf("failed to sign and broadcast: %s", err)
@@ -142,7 +145,7 @@ Example: $tester s 1 50000000uakt uatom 0.019 10 10
 					txBytes = append(txBytes, txByte)
 				}
 
-				log.Info().Msgf("round:%d; msgNum:%d; accAddr:%s", i+1, msgNum, accAddr)
+				log.Info().Msgf("round:%d; txNum:%d; accAddr:%s", i+1, txNum, accAddr)
 
 				for _, txByte := range txBytes {
 					resp, err := client.GRPC.BroadcastTx(ctx, txByte)
