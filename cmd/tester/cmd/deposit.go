@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 	"github.com/b-harvest/liquidity-stress-test/config"
@@ -21,10 +22,14 @@ import (
 
 func DepositCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "deposit [round]",
-		Short:   "deposit some coins in round times with mutiple messages in all existing pools.",
+		Use:     "deposit [pool-id] [deposit-coins] [round] [msg-num]",
+		Short:   "deposit coins to a liquidity pool in round times with a number of transaction messages",
 		Aliases: []string{"d"},
-		Args:    cobra.ExactArgs(1),
+		Args:    cobra.ExactArgs(4),
+		Long: `Deposit coins a liquidity pool in round times.
+
+Example: $tester d 1 100000000uatom,5000000000uusd 10 10
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
 			if err != nil {
@@ -62,69 +67,90 @@ func DepositCmd() *cobra.Command {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Accounts.Deposit, "")
+			poolId, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
-				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
+				return fmt.Errorf("pool-id %s not a valid uint, input a valid unsigned 32-bit integer for pool-id", args[0])
 			}
 
-			pools, err := client.GRPC.GetAllPools(ctx)
+			depositCoins, err := sdktypes.ParseCoinsNormalized(args[1])
 			if err != nil {
-				return fmt.Errorf("failed to get all liquidity pools: %s", err)
+				return err
 			}
 
-			var msgs []sdktypes.Msg
-
-			for _, pool := range pools {
-				depositCoins := sdktypes.NewCoins(
-					sdktypes.NewCoin(pool.ReserveCoinDenoms[0], sdktypes.NewInt(cfg.Amounts.Deposit[0])),
-					sdktypes.NewCoin(pool.ReserveCoinDenoms[1], sdktypes.NewInt(cfg.Amounts.Deposit[1])),
-				)
-
-				msg, err := tx.MsgDeposit(accAddr, pool.GetPoolId(), depositCoins)
-				if err != nil {
-					return fmt.Errorf("failed to create msg: %s", err)
-				}
-				msgs = append(msgs, msg)
+			err = depositCoins.Validate()
+			if err != nil {
+				return err
 			}
 
-			round, err := strconv.Atoi(args[0])
+			if depositCoins.Len() != 2 {
+				return fmt.Errorf("the number of deposit coins must be two in the pool-type 1")
+			}
+
+			round, err := strconv.Atoi(args[2])
 			if err != nil {
 				return fmt.Errorf("round must be integer: %s", args[0])
 			}
 
-			account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+			msgNum, err := strconv.Atoi(args[3])
 			if err != nil {
-				return fmt.Errorf("failed to get account information: %s", err)
+				return fmt.Errorf("txNum must be integer: %s", args[0])
 			}
-
-			accSeq := account.GetSequence()
-			accNum := account.GetAccountNumber()
-
-			gasLimit := uint64(cfg.Tx.GasLimit)
-			fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Tx.FeeDenom, sdktypes.NewInt(cfg.Tx.FeeAmount)))
-			memo := cfg.Tx.Memo
-
-			tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
 
 			for i := 0; i < round; i++ {
-				resp, err := tx.SignAndBroadcast(ctx, accSeq, accNum, privKey, msgs...)
+				accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
 				if err != nil {
-					return fmt.Errorf("failed to sign and broadcast: %s", err)
+					return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 				}
 
-				accSeq = accSeq + 1
+				msg, err := tx.MsgDeposit(accAddr, poolId, depositCoins)
+				if err != nil {
+					return fmt.Errorf("failed to create msg: %s", err)
+				}
 
-				log.Debug().
-					Str("account", accAddr).
-					Int("round", i+1).
-					Str("total messsages", fmt.Sprintf("%d", len(msgs))).
-					Uint32("code", resp.TxResponse.Code).
-					Int64("height", resp.TxResponse.Height).
-					Str("hash", resp.TxResponse.TxHash).
-					Msg("result")
+				msgs := []sdktypes.Msg{msg}
 
-				log.Info().Msgf("reference: %s/cosmos/tx/v1beta1/txs/%s", cfg.LCD.Address, resp.TxResponse.TxHash)
+				account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+				if err != nil {
+					return fmt.Errorf("failed to get account information: %s", err)
+				}
+
+				accSeq := account.GetSequence()
+				accNum := account.GetAccountNumber()
+
+				gasLimit := uint64(cfg.Custom.GasLimit)
+				fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Custom.FeeDenom, sdktypes.NewInt(cfg.Custom.FeeAmount)))
+				memo := cfg.Custom.Memo
+
+				tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
+
+				var txBytes [][]byte
+
+				for i := 0; i < msgNum; i++ {
+					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
+					if err != nil {
+						return fmt.Errorf("failed to sign and broadcast: %s", err)
+					}
+
+					accSeq = accSeq + 1
+
+					txBytes = append(txBytes, txByte)
+				}
+
+				log.Info().Msgf("round:%d; msgNum:%d; accAddr:%s", i+1, msgNum, accAddr)
+
+				for _, txByte := range txBytes {
+					resp, err := client.GRPC.BroadcastTx(ctx, txByte)
+					if err != nil {
+						return fmt.Errorf("failed to broadcast transaction: %s", err)
+					}
+
+					log.Info().Msgf("%s/cosmos/tx/v1beta1/txs/%s", cfg.LCD.Address, resp.TxResponse.TxHash)
+				}
+
+				// wait for one block
+				time.Sleep(1 * time.Second)
 			}
+
 			return nil
 		},
 	}
