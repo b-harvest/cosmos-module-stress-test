@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 	"github.com/b-harvest/liquidity-stress-test/config"
@@ -57,7 +56,10 @@ func SwapCmd() *cobra.Command {
 
 			defer client.Stop() // nolint: errcheck
 
-			chainID, err := client.RPC.GetNetworkChainID(context.Background())
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			chainID, err := client.RPC.GetNetworkChainID(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
@@ -67,7 +69,7 @@ func SwapCmd() *cobra.Command {
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}
 
-			pools, err := client.GRPC.GetAllPools(context.Background())
+			pools, err := client.GRPC.GetAllPools(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to get all liquidity pools: %s", err)
 			}
@@ -93,7 +95,7 @@ func SwapCmd() *cobra.Command {
 				return fmt.Errorf("round must be integer: %s", args[0])
 			}
 
-			account, err := client.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
+			account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
 			if err != nil {
 				return fmt.Errorf("failed to get account information: %s", err)
 			}
@@ -108,7 +110,7 @@ func SwapCmd() *cobra.Command {
 			tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
 
 			for i := 0; i < round; i++ {
-				resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
+				resp, err := tx.SignAndBroadcast(ctx, accSeq, accNum, privKey, msgs...)
 				if err != nil {
 					return fmt.Errorf("failed to sign and broadcast: %s", err)
 				}
@@ -117,17 +119,14 @@ func SwapCmd() *cobra.Command {
 
 				log.Debug().
 					Str("account", accAddr).
-					Uint64("account sequence", accSeq).
 					Int("round", i+1).
-					Str("number of messsages", fmt.Sprintf("%d", len(msgs))).
+					Str("total messsages", fmt.Sprintf("%d", len(msgs))).
 					Uint32("code", resp.TxResponse.Code).
 					Int64("height", resp.TxResponse.Height).
 					Str("hash", resp.TxResponse.TxHash).
-					Msg("swap result")
+					Msg("result")
 
 				log.Info().Msgf("reference: %s/cosmos/tx/v1beta1/txs/%s", cfg.LCD.Address, resp.TxResponse.TxHash)
-
-				time.Sleep(5 * time.Second)
 			}
 
 			return nil

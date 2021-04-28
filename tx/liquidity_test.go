@@ -195,7 +195,10 @@ func TestDepositWithinBatch(t *testing.T) {
 			accSeq := account.GetSequence()
 			accNum := account.GetAccountNumber()
 
-			resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			resp, err := tx.SignAndBroadcast(ctx, accSeq, accNum, privKey, msgs...)
 			require.NoError(t, err)
 
 			fmt.Println("Code: ", resp.TxResponse.Code)
@@ -249,7 +252,10 @@ func TestWithdrawWithinBatch(t *testing.T) {
 			accSeq := account.GetSequence()
 			accNum := account.GetAccountNumber()
 
-			resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			resp, err := tx.SignAndBroadcast(ctx, accSeq, accNum, privKey, msgs...)
 			require.NoError(t, err)
 
 			fmt.Println("Code: ", resp.TxResponse.Code)

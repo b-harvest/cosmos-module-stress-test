@@ -14,8 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-
-	"github.com/rs/zerolog/log"
 )
 
 // Transaction is an object that has common fields for signing a transaction.
@@ -104,7 +102,7 @@ func MsgSwap(poolCreator string, poolId uint64, swapTypeId uint32, offerCoin sdk
 }
 
 // SignAndBroadcast signs message(s) with the account's private key and braodacasts the message(s).
-func (t *Transaction) SignAndBroadcast(accSeq uint64, accNum uint64, privKey *secp256k1.PrivKey, msgs ...sdktypes.Msg) (*tx.BroadcastTxResponse, error) {
+func (t *Transaction) SignAndBroadcast(ctx context.Context, accSeq uint64, accNum uint64, privKey *secp256k1.PrivKey, msgs ...sdktypes.Msg) (*tx.BroadcastTxResponse, error) {
 	txBuilder := t.Client.CliCtx.TxConfig.NewTxBuilder()
 	txBuilder.SetMsgs(msgs...)
 	txBuilder.SetGasLimit(t.GasLimit)
@@ -147,11 +145,6 @@ func (t *Transaction) SignAndBroadcast(accSeq uint64, accNum uint64, privKey *se
 	if err != nil {
 		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to encode tx and get raw tx data: %s", err)
 	}
-
-	log.Debug().Msg("broadcasting transaction")
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	resp, err := t.Client.GRPC.BroadcastTx(ctx, txBytes)
 	if err != nil {
