@@ -69,6 +69,11 @@ This program performs stress testing for the liquidity module. This will help to
 ```
 
 ## Usage
+
+### Configuration
+
+This stress testing program for the liquidity module requires a configuration file, `config.toml` in current working directory. An example of configuration file is available in `example.toml` and the config source code can be found in [here](./config.config.go).
+
 ### Build
 
 ```bash
@@ -98,7 +103,7 @@ Usage:
   tester [command]
 
 Available Commands:
-  create-pool create liquidity pools of every pair of coins exist in the network.
+  create-all-pools create liquidity pools of every pair of coins exist in the network.
   deposit     deposit new coins to every existing pools.
   help        Help about any command
   swap        swap some coins from the exisiting pools.
