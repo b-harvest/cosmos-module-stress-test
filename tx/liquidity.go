@@ -16,7 +16,7 @@ import (
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
-// Transaction is an object that has common fields for signing a transaction.
+// Transaction is an object that has common fields when signing transaction.
 type Transaction struct {
 	Client   *client.Client `json:"client"`
 	ChainID  string         `json:"chain_id"`
@@ -25,7 +25,7 @@ type Transaction struct {
 	Memo     string         `json:"memo"`
 }
 
-// NewTransaction returns new Transaction.
+// NewTransaction returns new Transaction object.
 func NewTransaction(client *client.Client, chainID string, gasLimit uint64, fees sdktypes.Coins, memo string) *Transaction {
 	return &Transaction{
 		Client:   client,
@@ -36,7 +36,7 @@ func NewTransaction(client *client.Client, chainID string, gasLimit uint64, fees
 	}
 }
 
-// MsgCreatePool returns MsgCreatePool object.
+// MsgCreatePool creates create pool message and returns MsgCreatePool transaction message.
 func MsgCreatePool(poolCreator string, poolTypeId uint32, depositCoins sdktypes.Coins) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)
 	if err != nil {
@@ -52,7 +52,7 @@ func MsgCreatePool(poolCreator string, poolTypeId uint32, depositCoins sdktypes.
 	return msg, nil
 }
 
-// MsgDeposit returns MsgDeposit object.
+// MsgDeposit creates deposit message and returns MsgDeposit transaction message.
 func MsgDeposit(poolCreator string, poolId uint64, depositCoins sdktypes.Coins) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)
 	if err != nil {
@@ -68,7 +68,7 @@ func MsgDeposit(poolCreator string, poolId uint64, depositCoins sdktypes.Coins) 
 	return msg, nil
 }
 
-// MsgWithdraw returns MsgWithdraw object.
+// MsgWithdraw creates withdraw message and returns MsgWithdraw transaction message.
 func MsgWithdraw(poolCreator string, poolId uint64, poolCoin sdktypes.Coin) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)
 	if err != nil {
@@ -84,7 +84,7 @@ func MsgWithdraw(poolCreator string, poolId uint64, poolCoin sdktypes.Coin) (sdk
 	return msg, nil
 }
 
-// MsgSwap returns MsgSwap object.
+// MsgSwap creates swap message and returns MsgWithdraw MsgSwap message.
 func MsgSwap(poolCreator string, poolId uint64, swapTypeId uint32, offerCoin sdktypes.Coin,
 	demandCoinDenom string, orderPrice sdktypes.Dec, swapFeeRate sdktypes.Dec) (sdktypes.Msg, error) {
 	accAddr, err := sdktypes.AccAddressFromBech32(poolCreator)

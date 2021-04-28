@@ -43,10 +43,7 @@ func TestRecoverAccAddrFromMnemonic(t *testing.T) {
 }
 
 func TestNewMnemonic(t *testing.T) {
-	// number of accounts to create
-	num := int(5)
-
-	for i := 0; i < num; i++ {
+	for i := 0; i < 5; i++ {
 		entropy, err := bip39.NewEntropy(256)
 		require.NoError(t, err)
 
