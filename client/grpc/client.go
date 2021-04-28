@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -17,7 +16,7 @@ type Client struct {
 
 // NewClient creates GRPC client.
 func NewClient(grpcURL string, timeout int64) (*Client, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	client, err := grpc.DialContext(ctx, grpcURL, grpc.WithInsecure(), grpc.WithBlock())

@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/tx"
 )
@@ -13,11 +12,8 @@ func (c *Client) GetTxClient() tx.ServiceClient {
 }
 
 // BroadcastTx broadcasts transaction.
-func (c *Client) BroadcastTx(txBytes []byte) (*tx.BroadcastTxResponse, error) {
+func (c *Client) BroadcastTx(ctx context.Context, txBytes []byte) (*tx.BroadcastTxResponse, error) {
 	client := c.GetTxClient()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	req := &tx.BroadcastTxRequest{
 		TxBytes: txBytes,
