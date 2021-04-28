@@ -11,7 +11,6 @@ import (
 	sdkclienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
@@ -101,8 +100,8 @@ func MsgSwap(poolCreator string, poolId uint64, swapTypeId uint32, offerCoin sdk
 	return msg, nil
 }
 
-// SignAndBroadcast signs message(s) with the account's private key and braodacasts the message(s).
-func (t *Transaction) SignAndBroadcast(ctx context.Context, accSeq uint64, accNum uint64, privKey *secp256k1.PrivKey, msgs ...sdktypes.Msg) (*tx.BroadcastTxResponse, error) {
+// Sign signs message(s) with the account's private key and braodacasts the message(s).
+func (t *Transaction) Sign(ctx context.Context, accSeq uint64, accNum uint64, privKey *secp256k1.PrivKey, msgs ...sdktypes.Msg) ([]byte, error) {
 	txBuilder := t.Client.CliCtx.TxConfig.NewTxBuilder()
 	txBuilder.SetMsgs(msgs...)
 	txBuilder.SetGasLimit(t.GasLimit)
@@ -122,7 +121,7 @@ func (t *Transaction) SignAndBroadcast(ctx context.Context, accSeq uint64, accNu
 
 	err := txBuilder.SetSignatures(sigV2)
 	if err != nil {
-		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to set signatures: %s", err)
+		return nil, fmt.Errorf("failed to set signatures: %s", err)
 	}
 
 	signerData := authsigning.SignerData{
@@ -133,23 +132,18 @@ func (t *Transaction) SignAndBroadcast(ctx context.Context, accSeq uint64, accNu
 
 	sigV2, err = sdkclienttx.SignWithPrivKey(signMode, signerData, txBuilder, privKey, t.Client.CliCtx.TxConfig, accSeq)
 	if err != nil {
-		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to sign with private key: %s", err)
+		return nil, fmt.Errorf("failed to sign with private key: %s", err)
 	}
 
 	err = txBuilder.SetSignatures(sigV2)
 	if err != nil {
-		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to set signatures: %s", err)
+		return nil, fmt.Errorf("failed to set signatures: %s", err)
 	}
 
-	txBytes, err := t.Client.CliCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
+	txByte, err := t.Client.CliCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
 	if err != nil {
-		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to encode tx and get raw tx data: %s", err)
+		return nil, fmt.Errorf("failed to encode tx and get raw tx data: %s", err)
 	}
 
-	resp, err := t.Client.GRPC.BroadcastTx(ctx, txBytes)
-	if err != nil {
-		return &tx.BroadcastTxResponse{}, fmt.Errorf("failed to broadcast transaction: %s", err)
-	}
-
-	return resp, nil
+	return txByte, nil
 }

@@ -38,11 +38,11 @@ type LCDConfig struct {
 
 //  CustomConfig contains custom configuration for stress testing.
 type CustomConfig struct {
-	Mnemonics []string `toml:"mnemonics"`
-	GasLimit  int64    `toml:"gas_limit"`
-	FeeDenom  string   `toml:"fee_denom"`
-	FeeAmount int64    `toml:"fee_amount"`
-	Memo      string   `toml:"memo"`
+	Mnemonic  string `toml:"mnemonic"`
+	GasLimit  int64  `toml:"gas_limit"`
+	FeeDenom  string `toml:"fee_denom"`
+	FeeAmount int64  `toml:"fee_amount"`
+	Memo      string `toml:"memo"`
 }
 
 // NewConfig builds a new Config instance.

@@ -65,7 +65,7 @@ func CreateAllPoolsCmd() *cobra.Command {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Accounts.CreatePool, "")
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
 			if err != nil {
 				return fmt.Errorf("failed to retrieve account and private key from mnemonic: %s", err)
 			}
@@ -91,8 +91,8 @@ func CreateAllPoolsCmd() *cobra.Command {
 						"uxrn",
 						"xrun",
 					},
-					sdktypes.NewInt(cfg.Amounts.CreatePool[0]),
-					sdktypes.NewInt(cfg.Amounts.CreatePool[1]),
+					sdktypes.NewInt(50_000_000),
+					sdktypes.NewInt(50_000_000),
 				},
 			}
 
@@ -133,18 +133,23 @@ func CreateAllPoolsCmd() *cobra.Command {
 				accSeq := account.GetSequence()
 				accNum := account.GetAccountNumber()
 
-				gasLimit := uint64(cfg.Tx.GasLimit)
-				fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Tx.FeeDenom, sdktypes.NewInt(cfg.Tx.FeeAmount)))
-				memo := cfg.Tx.Memo
+				gasLimit := uint64(cfg.Custom.GasLimit)
+				fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Custom.FeeDenom, sdktypes.NewInt(cfg.Custom.FeeAmount)))
+				memo := cfg.Custom.Memo
 
 				tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
 
 				ctx, cancel := context.WithCancel(ctx)
 				defer cancel()
 
-				resp, err := tx.SignAndBroadcast(ctx, accSeq, accNum, privKey, msgs...)
+				txBytes, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
 				if err != nil {
 					return fmt.Errorf("failed to sign and broadcast: %s", err)
+				}
+
+				resp, err := client.GRPC.BroadcastTx(ctx, txBytes)
+				if err != nil {
+					return fmt.Errorf("failed to broadcast transaction: %s", err)
 				}
 
 				log.Debug().

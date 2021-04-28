@@ -110,7 +110,10 @@ func TestDepositWithinBatch(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			resp, err := tx.SignAndBroadcast(ctx, accSeq, accNum, privKey, msgs...)
+			txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
+			require.NoError(t, err)
+
+			resp, err := c.GRPC.BroadcastTx(ctx, txByte)
 			require.NoError(t, err)
 
 			fmt.Println("Code: ", resp.TxResponse.Code)
@@ -167,7 +170,10 @@ func TestWithdrawWithinBatch(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			resp, err := tx.SignAndBroadcast(ctx, accSeq, accNum, privKey, msgs...)
+			txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
+			require.NoError(t, err)
+
+			resp, err := c.GRPC.BroadcastTx(ctx, txByte)
 			require.NoError(t, err)
 
 			fmt.Println("Code: ", resp.TxResponse.Code)
