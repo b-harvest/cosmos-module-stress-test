@@ -142,7 +142,7 @@ func CreateAllPoolsCmd() *cobra.Command {
 					Uint32("code", resp.TxResponse.Code).
 					Int64("height", resp.TxResponse.Height).
 					Str("hash", resp.TxResponse.TxHash).
-					Msg("create-pool tester result")
+					Msg("create-pool result")
 
 				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
 			}
