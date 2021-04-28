@@ -15,12 +15,10 @@ var (
 
 // Config defines all necessary configuration parameters.
 type Config struct {
-	RPC      *RPCConfig      `toml:"rpc"`
-	GRPC     *GRPCConfig     `toml:"grpc"`
-	LCD      *LCDConfig      `toml:"lcd"`
-	Accounts *AccountsConfig `toml:"accounts"`
-	Amounts  *AmountsConfig  `toml:"amounts"`
-	Tx       *TxConfig       `toml:"tx"`
+	RPC    *RPCConfig    `toml:"rpc"`
+	GRPC   *GRPCConfig   `toml:"grpc"`
+	LCD    *LCDConfig    `toml:"lcd"`
+	Custom *CustomConfig `toml:"custom"`
 }
 
 // RPCConfig contains the configuration of the RPC endpoint.
@@ -38,28 +36,13 @@ type LCDConfig struct {
 	Address string `toml:"address"`
 }
 
-//  AccountsConfig contains test account mnemonics.
-type AccountsConfig struct {
-	CreatePool string `toml:"create_pool"`
-	Deposit    string `toml:"deposit"`
-	Withdraw   string `toml:"withdraw"`
-	Swap       string `toml:"swap"`
-}
-
-// AmountsConfig contains the coin amount(s) for each CLI operation.
-type AmountsConfig struct {
-	CreatePool []int64 `toml:"create_pool"`
-	Deposit    []int64 `toml:"deposit"`
-	Withdraw   int64   `toml:"withdraw"`
-	Swap       int64   `toml:"swap"`
-}
-
-// TxConfig contains the transaction configuration.
-type TxConfig struct {
-	GasLimit  int64  `toml:"gas_limit"`
-	FeeDenom  string `toml:"fee_denom"`
-	FeeAmount int64  `toml:"fee_amount"`
-	Memo      string `toml:"memo"`
+//  CustomConfig contains custom configuration for stress testing.
+type CustomConfig struct {
+	Accounts  []string `toml:"accounts"`
+	GasLimit  int64    `toml:"gas_limit"`
+	FeeDenom  string   `toml:"fee_denom"`
+	FeeAmount int64    `toml:"fee_amount"`
+	Memo      string   `toml:"memo"`
 }
 
 // NewConfig builds a new Config instance.
