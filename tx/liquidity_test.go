@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/test-go/testify/require"
 
@@ -12,8 +13,11 @@ import (
 	"github.com/b-harvest/liquidity-stress-test/tx"
 	"github.com/b-harvest/liquidity-stress-test/wallet"
 
+	sdkclienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
 var (
@@ -24,7 +28,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	c = client.NewClient(rpcAddress, grpcAddress)
+	c, _ = client.NewClient(rpcAddress, grpcAddress)
 
 	os.Exit(m.Run())
 }
@@ -55,6 +59,85 @@ func TestFindAllPairs(t *testing.T) {
 			for j := i + 1; j < len(p.pairs); j++ {
 				t.Log(p.pairs[i], p.pairs[j])
 			}
+		}
+	}
+}
+
+func TestSendTxsByIncrementingSequence(t *testing.T) {
+	mnemonic := "guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
+
+	accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(mnemonic, "")
+	require.NoError(t, err)
+
+	chainID, err := c.RPC.GetNetworkChainID(context.Background())
+	require.NoError(t, err)
+
+	depositCoins := sdktypes.NewCoins(sdktypes.NewCoin("uakt", sdktypes.NewInt(10_000_000)), sdktypes.NewCoin("uatom", sdktypes.NewInt(10_000_000)))
+
+	msg, err := tx.MsgDeposit(accAddr, uint64(1), depositCoins)
+	require.NoError(t, err)
+
+	msgs := []sdktypes.Msg{msg}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	for i := 0; i < 1; i++ {
+		account, err := c.GRPC.GetBaseAccountInfo(ctx, accAddr)
+		require.NoError(t, err)
+
+		accSeq := account.GetSequence()
+		accNum := account.GetAccountNumber()
+
+		txBuilder := c.CliCtx.TxConfig.NewTxBuilder()
+		txBuilder.SetMsgs(msgs...)
+		txBuilder.SetGasLimit(tx.DefaultGasLimit)
+		txBuilder.SetFeeAmount(tx.DefaultFees)
+		txBuilder.SetMemo(tx.DefaultMemo)
+
+		signMode := c.CliCtx.TxConfig.SignModeHandler().DefaultMode()
+
+		for j := 0; j < 5; j++ {
+			sigV2 := signing.SignatureV2{
+				PubKey: privKey.PubKey(),
+				Data: &signing.SingleSignatureData{
+					SignMode:  signMode,
+					Signature: nil,
+				},
+				Sequence: accSeq,
+			}
+
+			err = txBuilder.SetSignatures(sigV2)
+			require.NoError(t, err)
+
+			signerData := authsigning.SignerData{
+				ChainID:       chainID,
+				AccountNumber: accNum,
+				Sequence:      accSeq,
+			}
+
+			sigV2, err = sdkclienttx.SignWithPrivKey(signMode, signerData, txBuilder, privKey, c.CliCtx.TxConfig, accSeq)
+			require.NoError(t, err)
+
+			err = txBuilder.SetSignatures(sigV2)
+			require.NoError(t, err)
+
+			accSeq = accSeq + 1
+
+			txBytes, err := c.CliCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
+			require.NoError(t, err)
+
+			resp, err := c.GRPC.BroadcastTx(txBytes)
+			require.NoError(t, err)
+
+			fmt.Println("AccSeq: ", accSeq)
+			fmt.Println("AccNum: ", accNum)
+			fmt.Println("Code: ", resp.TxResponse.Code)
+			fmt.Println("Height: ", resp.TxResponse.Height)
+			fmt.Println("TxHash: ", resp.TxResponse.TxHash)
+			fmt.Println("")
+
+			// time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -93,7 +176,13 @@ func TestDepositWithinBatch(t *testing.T) {
 
 			tx := tx.NewTransaction(c, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
 
-			resp, err := tx.SignAndBroadcast(context.Background(), accAddr, privKey, msgs...)
+			account, err := c.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
+			require.NoError(t, err)
+
+			accSeq := account.GetSequence()
+			accNum := account.GetAccountNumber()
+
+			resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
 			require.NoError(t, err)
 
 			fmt.Println("Code: ", resp.TxResponse.Code)
@@ -137,7 +226,13 @@ func TestWithdrawWithinBatch(t *testing.T) {
 
 			tx := tx.NewTransaction(c, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
 
-			resp, err := tx.SignAndBroadcast(context.Background(), accAddr, privKey, msgs...)
+			account, err := c.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
+			require.NoError(t, err)
+
+			accSeq := account.GetSequence()
+			accNum := account.GetAccountNumber()
+
+			resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
 			require.NoError(t, err)
 
 			fmt.Println("Code: ", resp.TxResponse.Code)
