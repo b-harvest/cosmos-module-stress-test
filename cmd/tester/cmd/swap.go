@@ -76,7 +76,7 @@ func SwapCmd() *cobra.Command {
 
 			for _, pool := range pools {
 				swapTypeId := liqtypes.DefaultSwapTypeId
-				offerCoin := sdktypes.NewCoin(pool.ReserveCoinDenoms[0], tx.DefaultSwapOfferCoin)
+				offerCoin := sdktypes.NewCoin(pool.ReserveCoinDenoms[0], sdktypes.NewInt(cfg.Amounts.Swap))
 				demandCoinDenom := pool.ReserveCoinDenoms[1]
 				orderPrice := sdktypes.NewDecWithPrec(19, 3)
 				swapFeeRate := sdktypes.NewDecWithPrec(3, 3)

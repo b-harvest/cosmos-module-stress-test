@@ -88,8 +88,8 @@ func CreateAllPoolsCmd() *cobra.Command {
 						"uxrn",
 						"xrun",
 					},
-					tx.DefaultCreatePoolDepositCoinA,
-					tx.DefaultCreatePoolDepositCoinB,
+					sdktypes.NewInt(cfg.Amounts.CreatePool[0]),
+					sdktypes.NewInt(cfg.Amounts.CreatePool[1]),
 				},
 			}
 

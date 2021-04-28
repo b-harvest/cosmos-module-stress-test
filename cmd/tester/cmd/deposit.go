@@ -73,8 +73,8 @@ func DepositCmd() *cobra.Command {
 
 			for _, pool := range pools {
 				depositCoins := sdktypes.NewCoins(
-					sdktypes.NewCoin(pool.ReserveCoinDenoms[0], tx.DefaultDepositCoinA),
-					sdktypes.NewCoin(pool.ReserveCoinDenoms[1], tx.DefaultDepositCoinB),
+					sdktypes.NewCoin(pool.ReserveCoinDenoms[0], sdktypes.NewInt(cfg.Amounts.Deposit[0])),
+					sdktypes.NewCoin(pool.ReserveCoinDenoms[1], sdktypes.NewInt(cfg.Amounts.Deposit[1])),
 				)
 
 				msg, err := tx.MsgDeposit(accAddr, pool.GetPoolId(), depositCoins)

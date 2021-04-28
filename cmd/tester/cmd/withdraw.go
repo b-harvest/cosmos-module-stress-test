@@ -73,7 +73,7 @@ func WithdrawCmd() *cobra.Command {
 			var msgs []sdktypes.Msg
 
 			for _, pool := range pools {
-				poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, tx.DefaultWithdrawPoolCoinA)
+				poolCoin := sdktypes.NewCoin(pool.PoolCoinDenom, sdktypes.NewInt(cfg.Amounts.Withdraw))
 
 				msg, err := tx.MsgWithdraw(accAddr, pool.GetPoolId(), poolCoin)
 				if err != nil {

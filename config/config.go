@@ -19,6 +19,7 @@ type Config struct {
 	GRPC     *GRPCConfig     `toml:"grpc"`
 	LCD      *LCDConfig      `toml:"lcd"`
 	Accounts *AccountsConfig `toml:"accounts"`
+	Amounts  *AmountsConfig  `toml:"amounts"`
 }
 
 // RPCConfig contains the configuration of the RPC endpoint.
@@ -42,6 +43,14 @@ type AccountsConfig struct {
 	Deposit    string `toml:"deposit"`
 	Withdraw   string `toml:"withdraw"`
 	Swap       string `toml:"swap"`
+}
+
+// AmountsConfig contains the coin amount(s) for each CLI operation.
+type AmountsConfig struct {
+	CreatePool []int64 `toml:"create_pool"`
+	Deposit    []int64 `toml:"deposit"`
+	Withdraw   int64   `toml:"withdraw"`
+	Swap       int64   `toml:"swap"`
 }
 
 // NewConfig builds a new Config instance
