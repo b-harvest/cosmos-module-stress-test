@@ -114,3 +114,22 @@ Flags:
       --log-format string   logging format; must be either json or text; (default "text")
       --log-level string    logging level; (default "debug")
 ```
+
+### Tests
+
+```bash
+# Create liquidity pools of every pair of coins exist in the network
+tester ca
+
+# Deposit coins a liquidity pool in round times
+# tester deposit [pool-id] [deposit-coins] [round] [msg-num] [flags]
+tester d 1 100000000uakt,100000000uatom 5 5
+
+# Withdraw pool coin from the pool in round times with a number of transaction message
+# tester withdraw [pool-id] [pool-coin] [round] [msg-num] [flags]
+tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF27752 5 5
+
+# Swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of transaction messages
+# tester swap [pool-id] [offer-coin] [demand-coin-denom] [order-price] [round] [msg-num]
+tester s 1 50000000uakt uatom 0.019 5 5
+```
