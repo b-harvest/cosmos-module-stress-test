@@ -30,7 +30,7 @@ func RootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&logLevel, "log-level", zerolog.DebugLevel.String(), "logging level;")
 	cmd.PersistentFlags().StringVar(&logFormat, "log-format", logLevelText, "logging format; must be either json or text;")
 
-	cmd.AddCommand(CreatePoolCmd())
+	cmd.AddCommand(CreateAllPoolsCmd())
 	cmd.AddCommand(DepositCmd())
 	cmd.AddCommand(WithdrawCmd())
 	cmd.AddCommand(SwapCmd())

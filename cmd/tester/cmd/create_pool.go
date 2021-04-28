@@ -20,14 +20,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CreatePoolCmd creates liquidity pools of every pair of coins exist in the network.
-// The Gravity DEX testnet will have 11 coin types available and
-// this will create a total number of 55 pairs of liquidity pools.
-func CreatePoolCmd() *cobra.Command {
+// CreateAllPoolsCmd creates liquidity pools of every pair of coins exist in the network.
+// This command is useful for stress testing to bootstrap test pools as soon as new network is spun up.
+// Since the Gravity DEX testnet will have 11 coin types available, this will create a total number of 55 pairs of pools.
+func CreateAllPoolsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "create-pool",
+		Use:     "create-all-pools",
 		Short:   "create liquidity pools of every pair of coins exist in the network.",
-		Aliases: []string{"create", "c", "cp"},
+		Aliases: []string{"create-all", "ca"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logLvl, err := zerolog.ParseLevel(logLevel)
 			if err != nil {
@@ -45,18 +45,19 @@ func CreatePoolCmd() *cobra.Command {
 				return fmt.Errorf("invalid logging format: %s", logFormat)
 			}
 
-			ctx := context.Background()
-
 			cfg, err := config.Read(config.DefaultConfigPath)
 			if err != nil {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
 
-			client := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+			client, err := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+			if err != nil {
+				return fmt.Errorf("failed to connect clients: %s", err)
+			}
 
 			defer client.Stop() // nolint: errcheck
 
-			chainID, err := client.RPC.GetNetworkChainID(ctx)
+			chainID, err := client.RPC.GetNetworkChainID(context.Background())
 			if err != nil {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
@@ -102,6 +103,7 @@ func CreatePoolCmd() *cobra.Command {
 
 				var msgs []sdktypes.Msg
 
+				// find all pairs of coins. {coinA, coinB} and {coinB coinA} are excluded.
 				for i := 0; i < len(p.pairs)-1; i++ {
 					for j := i + 1; j < len(p.pairs); j++ {
 						count = count + 1
@@ -120,15 +122,23 @@ func CreatePoolCmd() *cobra.Command {
 					}
 				}
 
+				account, err := client.GRPC.GetBaseAccountInfo(context.Background(), accAddr)
+				if err != nil {
+					return fmt.Errorf("failed to get account information: %s", err)
+				}
+
+				accSeq := account.GetSequence()
+				accNum := account.GetAccountNumber()
+
 				tx := tx.NewTransaction(client, chainID, tx.DefaultGasLimit, tx.DefaultFees, tx.DefaultMemo)
 
-				resp, err := tx.SignAndBroadcast(ctx, accAddr, privKey, msgs...)
+				resp, err := tx.SignAndBroadcast(accSeq, accNum, privKey, msgs...)
 				if err != nil {
 					return fmt.Errorf("failed to sign and broadcast: %s", err)
 				}
 
 				log.Debug().
-					Str("total number of sent messages", fmt.Sprintf("%d", len(msgs))).
+					Str("number of messsages", fmt.Sprintf("%d", len(msgs))).
 					Uint32("code", resp.TxResponse.Code).
 					Int64("height", resp.TxResponse.Height).
 					Str("hash", resp.TxResponse.TxHash).
