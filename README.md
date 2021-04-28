@@ -115,7 +115,9 @@ Flags:
       --log-level string    logging level; (default "debug")
 ```
 
-### Tests
+## Test
+
+### localnet
 
 ```bash
 # Create liquidity pools of every pair of coins exist in the network
@@ -132,4 +134,12 @@ tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF2775
 # Swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of transaction messages
 # tester swap [pool-id] [offer-coin] [demand-coin-denom] [order-price] [round] [msg-num]
 tester s 1 50000000uakt uatom 0.019 5 5
+```
+
+### swap-testnet-2004
+
+```bash
+# Query existing pools with https://competition.bharvest.io:1317/tendermint/liquidity/v1beta1/pools
+tester d 1 1000000uatom,1000000uiris 10 10
+tester s 1 50000000uatom uiris 0.019 10 10
 ```
