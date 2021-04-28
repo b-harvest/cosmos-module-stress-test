@@ -62,7 +62,7 @@ func SwapCmd() *cobra.Command {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(swapTester, "")
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Accounts.Swap, "")
 			if err != nil {
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}

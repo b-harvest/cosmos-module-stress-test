@@ -62,7 +62,7 @@ func CreateAllPoolsCmd() *cobra.Command {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(createPoolTester, "")
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Accounts.CreatePool, "")
 			if err != nil {
 				return fmt.Errorf("failed to retrieve account and private key from mnemonic: %s", err)
 			}

@@ -15,9 +15,10 @@ var (
 
 // Config defines all necessary configuration parameters.
 type Config struct {
-	RPC  *RPCConfig  `toml:"rpc"`
-	GRPC *GRPCConfig `toml:"grpc"`
-	LCD  *LCDConfig  `toml:"lcd"`
+	RPC      *RPCConfig      `toml:"rpc"`
+	GRPC     *GRPCConfig     `toml:"grpc"`
+	LCD      *LCDConfig      `toml:"lcd"`
+	Accounts *AccountsConfig `toml:"accounts"`
 }
 
 // RPCConfig contains the configuration of the RPC endpoint.
@@ -33,6 +34,14 @@ type GRPCConfig struct {
 // LCDConfig contains the configuration of the REST server endpoint.
 type LCDConfig struct {
 	Address string `toml:"address"`
+}
+
+//  AccountsConfig contains test account mnemonics.
+type AccountsConfig struct {
+	CreatePool string `toml:"create_pool"`
+	Deposit    string `toml:"deposit"`
+	Withdraw   string `toml:"withdraw"`
+	Swap       string `toml:"swap"`
 }
 
 // NewConfig builds a new Config instance

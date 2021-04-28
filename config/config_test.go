@@ -29,8 +29,13 @@ address = "localhost:9090"
 
 [lcd]
 address = "http://localhost:1317"
-`
 
+[accounts]
+create_pool = "guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
+deposit = "friend excite rough reopen cover wheel spoon convince island path clean monkey play snow number walnut pull lock shoot hurry dream divide concert discover"
+withdraw = "guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
+swap = "melody lonely cube ball ritual jump fabric pull pupil kit credit filter acid used festival salmon muscle first meat aisle bubble vote gorilla judge"
+`
 	cfg, err := config.ParseString([]byte(sampleConfig))
 	require.NoError(t, err)
 

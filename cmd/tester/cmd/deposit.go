@@ -59,7 +59,7 @@ func DepositCmd() *cobra.Command {
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(depositTester, "")
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Accounts.Deposit, "")
 			if err != nil {
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}
