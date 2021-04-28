@@ -115,7 +115,7 @@ func WithdrawCmd() *cobra.Command {
 					Str("hash", resp.TxResponse.TxHash).
 					Msg("withdraw result")
 
-				log.Info().Msgf("reference: http://localhost:1317/cosmos/tx/v1beta1/txs/%s", resp.TxResponse.TxHash)
+				log.Info().Msgf("reference: %s/cosmos/tx/v1beta1/txs/%s", cfg.LCD.Address, resp.TxResponse.TxHash)
 
 				time.Sleep(5 * time.Second)
 			}
