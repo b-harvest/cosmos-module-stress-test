@@ -26,7 +26,7 @@ func DepositCmd() *cobra.Command {
 		Short:   "deposit coins to a liquidity pool in round times with a number of transaction messages",
 		Aliases: []string{"d"},
 		Args:    cobra.ExactArgs(4),
-		Long: `Deposit coins a liquidity pool in round times.
+		Long: `Deposit coins to a liquidity pool in round times with a number of transaction messages.
 
 Example: $tester d 1 100000000uatom,5000000000uusd 10 10
 `,
