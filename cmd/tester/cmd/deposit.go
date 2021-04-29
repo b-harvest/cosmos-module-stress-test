@@ -98,36 +98,36 @@ Example: $tester d 1 100000000uatom,5000000000uusd 10 10
 				return fmt.Errorf("txNum must be integer: %s", args[0])
 			}
 
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
+			if err != nil {
+				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
+			}
+
+			account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+			if err != nil {
+				return fmt.Errorf("failed to get account information: %s", err)
+			}
+
+			accSeq := account.GetSequence()
+			accNum := account.GetAccountNumber()
+
+			msg, err := tx.MsgDeposit(accAddr, poolId, depositCoins)
+			if err != nil {
+				return fmt.Errorf("failed to create msg: %s", err)
+			}
+
+			msgs := []sdktypes.Msg{msg}
+
+			gasLimit := uint64(cfg.Custom.GasLimit)
+			fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Custom.FeeDenom, sdktypes.NewInt(cfg.Custom.FeeAmount)))
+			memo := cfg.Custom.Memo
+
+			tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
+
 			for i := 0; i < round; i++ {
-				accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
-				if err != nil {
-					return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
-				}
-
-				msg, err := tx.MsgDeposit(accAddr, poolId, depositCoins)
-				if err != nil {
-					return fmt.Errorf("failed to create msg: %s", err)
-				}
-
-				msgs := []sdktypes.Msg{msg}
-
-				account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
-				if err != nil {
-					return fmt.Errorf("failed to get account information: %s", err)
-				}
-
-				accSeq := account.GetSequence()
-				accNum := account.GetAccountNumber()
-
-				gasLimit := uint64(cfg.Custom.GasLimit)
-				fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Custom.FeeDenom, sdktypes.NewInt(cfg.Custom.FeeAmount)))
-				memo := cfg.Custom.Memo
-
-				tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
-
 				var txBytes [][]byte
 
-				for i := 0; i < txNum; i++ {
+				for j := 0; j < txNum; j++ {
 					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
 					if err != nil {
 						return fmt.Errorf("failed to sign and broadcast: %s", err)
