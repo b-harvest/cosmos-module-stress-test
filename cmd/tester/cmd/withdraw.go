@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 	"github.com/b-harvest/liquidity-stress-test/config"
@@ -146,9 +145,6 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 
 					log.Info().Msgf("%s/cosmos/tx/v1beta1/txs/%s", cfg.LCD.Address, resp.TxResponse.TxHash)
 				}
-
-				// wait for one block
-				time.Sleep(1 * time.Second)
 			}
 
 			return nil
