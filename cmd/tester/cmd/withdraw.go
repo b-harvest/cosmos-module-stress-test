@@ -100,14 +100,6 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}
 
-			account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
-			if err != nil {
-				return fmt.Errorf("failed to get account information: %s", err)
-			}
-
-			accSeq := account.GetSequence()
-			accNum := account.GetAccountNumber()
-
 			msg, err := tx.MsgWithdraw(accAddr, poolId, poolCoin)
 			if err != nil {
 				return fmt.Errorf("failed to create msg: %s", err)
@@ -123,6 +115,14 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 
 			for i := 0; i < round; i++ {
 				var txBytes [][]byte
+
+				account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+				if err != nil {
+					return fmt.Errorf("failed to get account information: %s", err)
+				}
+
+				accSeq := account.GetSequence()
+				accNum := account.GetAccountNumber()
 
 				for j := 0; j < txNum; j++ {
 					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)

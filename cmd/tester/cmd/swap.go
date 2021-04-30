@@ -109,14 +109,6 @@ Example: $tester s 1 50000000uakt uatom 0.019 10 10
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}
 
-			account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
-			if err != nil {
-				return fmt.Errorf("failed to get account information: %s", err)
-			}
-
-			accSeq := account.GetSequence()
-			accNum := account.GetAccountNumber()
-
 			msg, err := tx.MsgSwap(accAddr, poolId, uint32(1), offerCoin, args[2], orderPrice, sdktypes.NewDecWithPrec(3, 3))
 			if err != nil {
 				return fmt.Errorf("failed to create msg: %s", err)
@@ -132,6 +124,14 @@ Example: $tester s 1 50000000uakt uatom 0.019 10 10
 
 			for i := 0; i < round; i++ {
 				var txBytes [][]byte
+
+				account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+				if err != nil {
+					return fmt.Errorf("failed to get account information: %s", err)
+				}
+
+				accSeq := account.GetSequence()
+				accNum := account.GetAccountNumber()
 
 				for i := 0; i < txNum; i++ {
 					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
