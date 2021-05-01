@@ -131,9 +131,9 @@ tester d 1 2000000uakt,2000000uatom 5 5
 # tester withdraw [pool-id] [pool-coin] [round] [tx-num] [flags]
 tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF27752 5 5
 
-# Swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of transaction messages
-# tester swap [pool-id] [offer-coin] [demand-coin-denom] [order-price] [round] [tx-num]
-tester s 1 5000000uakt uatom 0.019 5 5
+# Swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of txs and tx messages
+# tester swap [pool-id] [offer-coin] [demand-coin-denom][round] [tx-num] [msg-num]
+tester s 1 1000000uakt uatom 2 2 5
 ```
 
 ### swap-testnet-2004
@@ -142,5 +142,5 @@ tester s 1 5000000uakt uatom 0.019 5 5
 # Query existing pools with https://competition.bharvest.io:1317/tendermint/liquidity/v1beta1/pools
 tester d 1 1000000uatom,1000000uiris 500 500
 tester w 1 1pool7B550B734397473BCD4CE9429571870EB6372EF1268E6054B3B9D612AA41D4B5 500 500
-tester s 1 10000000uiris uatom 0.019 1000 500
+tester s 1 10000000uiris uatom 1000 500 1
 ```
