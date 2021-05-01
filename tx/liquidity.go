@@ -3,6 +3,7 @@ package tx
 import (
 	"context"
 	"fmt"
+	"math/rand"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
 
@@ -98,6 +99,47 @@ func MsgSwap(poolCreator string, poolId uint64, swapTypeId uint32, offerCoin sdk
 	}
 
 	return msg, nil
+}
+
+func (t *Transaction) CreateMultipleMsgSwap(ctx context.Context, poolCreator string, poolId uint64, offerCoin sdktypes.Coin, msgNum int) ([]sdktypes.Msg, error) {
+	pool, err := t.Client.GRPC.GetPool(ctx, poolId)
+	if err != nil {
+		return []sdktypes.Msg{}, err
+	}
+
+	reserveCoins := sdktypes.NewCoins()
+
+	for _, denom := range pool.ReserveCoinDenoms {
+		coin, err := t.Client.GRPC.GetBalance(ctx, pool.GetReserveAccount().String(), denom)
+		if err != nil {
+			return []sdktypes.Msg{}, err
+		}
+		reserveCoins = reserveCoins.Add(*coin)
+	}
+
+	orderPrice := reserveCoins.AmountOf(pool.ReserveCoinDenoms[0]).ToDec().Quo(reserveCoins.AmountOf(pool.ReserveCoinDenoms[1]).ToDec())
+
+	var msgs []sdktypes.Msg
+
+	// randomize order price
+	for i := 0; i < msgNum; i++ {
+		random := sdktypes.NewDec(int64(rand.Intn(2)))
+		orderPricePercentage := orderPrice.Mul(random.Quo(sdktypes.NewDec(100)))
+
+		if i%2 == 0 {
+			orderPrice = orderPrice.Add(orderPricePercentage)
+		} else {
+			orderPrice = orderPrice.Sub(orderPricePercentage)
+		}
+
+		msg, err := MsgSwap(poolCreator, poolId, uint32(1), offerCoin, pool.ReserveCoinDenoms[1], orderPrice, sdktypes.NewDecWithPrec(3, 3))
+		if err != nil {
+			return []sdktypes.Msg{}, err
+		}
+		msgs = append(msgs, msg)
+	}
+
+	return msgs, nil
 }
 
 // Sign signs message(s) with the account's private key and braodacasts the message(s).
