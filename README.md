@@ -90,61 +90,24 @@ tester s 1 10000000uiris uatom 1000 500 1
 
 The repository for Gravity DEX testnets can be found [here](https://github.com/b-harvest/gravity-dex-testnets).
 
-### Genesis 
+### Gravity DEX Incentivized Testnet
 
-- [genesis.json](https://github.com/nodebreaker0-0/gentx/blob/main/genesis.json) file 
-- chain-id is `swap-testnet-2004` 
-- available coin types
+- Genesis file: [genesis.json](https://raw.githubusercontent.com/b-harvest/gravity-dex-testnets/main/competition-0001/genesis.json) file 
+- Chain ID: `competition-0001` 
+- Public REST API server: https://competition.bharvest.io:1317/
+- Public RPC address: https://competition.bharvest.io/
+- Public gRPC address: competition.bharvest.io:9090
+- Available Coin Types
+    - atom
+    - regen
+    - xrn
+    - btsg
+    - dvpn
+    - xprt
+    - akt
+    - luna
+    - ngm
+    - gcyb
+    - iris
+    - run
 
-```bash
-"coins":[
-    {
-        "denom": "stake",
-        "amount": "50000000000000"
-    },
-    {
-        "denom": "uakt",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "uatom",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "ubtsg",
-        "amount": "50000000000000"
-    },
-    {
-        "denom": "udvpn",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "ugcyb",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "uiris",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "uluna",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "ungm",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "uxprt",
-        "amount": "5000000000000000"
-    },
-    {
-        "denom": "uxrn",
-        "amount": "500000000000000"
-    },
-    {
-        "denom": "xrun",
-        "amount": "500000000000000"
-    }
-]
-```
