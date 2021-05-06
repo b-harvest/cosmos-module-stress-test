@@ -2,6 +2,7 @@ package rpc_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -30,4 +31,27 @@ func TestGetNetworkChainID(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Log(chainID)
+}
+
+func TestGetBlockTime(t *testing.T) {
+	ctx := context.Background()
+
+	status, err := c.GetStatus(ctx)
+	require.NoError(t, err)
+
+	currentBlockHeight := status.SyncInfo.LatestBlockHeight
+	currentBlockTime := status.SyncInfo.LatestBlockTime
+
+	height := int64(currentBlockHeight - 1)
+	prevBlock, err := c.Block(ctx, &height)
+	require.NoError(t, err)
+
+	prevBlockHeight := prevBlock.Block.Height
+	prevBlockTime := prevBlock.Block.Time
+
+	blockTime := currentBlockTime.Sub(prevBlockTime)
+
+	fmt.Println(currentBlockHeight, currentBlockTime)
+	fmt.Println(prevBlockHeight, prevBlockTime)
+	fmt.Println(blockTime)
 }
