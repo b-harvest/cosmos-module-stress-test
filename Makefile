@@ -24,8 +24,8 @@ test-unit:
 ###                               Localnet                                  ###
 ###############################################################################
 
-# Run a single testnet locally
 localnet: 
+	@echo "Bootstraping a single local testnet..."
 	./scripts/localnet.sh
 
 .PHONY: localnet
