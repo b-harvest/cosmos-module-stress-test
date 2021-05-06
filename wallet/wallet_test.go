@@ -1,7 +1,6 @@
 package wallet_test
 
 import (
-	"fmt"
 	"testing"
 
 	bip39 "github.com/cosmos/go-bip39"
@@ -53,6 +52,6 @@ func TestNewMnemonic(t *testing.T) {
 		accAddr, _, err := wallet.RecoverAccountFromMnemonic(mnemonic, "")
 		require.NoError(t, err)
 
-		fmt.Println(mnemonic, accAddr)
+		t.Log(mnemonic, accAddr)
 	}
 }

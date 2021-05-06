@@ -126,7 +126,7 @@ Example: $tester s 1 50000000uakt uatom 10 10 10
 				accSeq := account.GetSequence()
 				accNum := account.GetAccountNumber()
 
-				msgs, err := tx.CreateMultipleMsgSwap(ctx, accAddr, poolId, offerCoin, msgNum)
+				msgs, err := tx.CreateSwapBot(ctx, accAddr, poolId, offerCoin, msgNum)
 				if err != nil {
 					return fmt.Errorf("failed to create msg: %s", err)
 				}

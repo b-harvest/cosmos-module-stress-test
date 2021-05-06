@@ -101,7 +101,8 @@ func MsgSwap(poolCreator string, poolId uint64, swapTypeId uint32, offerCoin sdk
 	return msg, nil
 }
 
-func (t *Transaction) CreateMultipleMsgSwap(ctx context.Context, poolCreator string, poolId uint64, offerCoin sdktypes.Coin, msgNum int) ([]sdktypes.Msg, error) {
+// CreateSwapBot creates a bot that makes multiple swaps which increases and decreases
+func (t *Transaction) CreateSwapBot(ctx context.Context, poolCreator string, poolId uint64, offerCoin sdktypes.Coin, msgNum int) ([]sdktypes.Msg, error) {
 	pool, err := t.Client.GRPC.GetPool(ctx, poolId)
 	if err != nil {
 		return []sdktypes.Msg{}, err
