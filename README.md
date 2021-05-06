@@ -1,3 +1,11 @@
+<p align="center">
+  <a href="https://github.com/b-harvest/gravity-dex-firestation" target="_blank"><img width="140" src="https://user-images.githubusercontent.com/20435620/117280451-92261580-ae9d-11eb-8907-f72a00320b22.jpeg" alt="B-Harvest"></a>
+</p>
+
+<h1 align="center">
+    Liquidity Module Stress Testing Program 🔧
+</h1>
+
 ## Overview
 
 This program performs stress testing for the liquidity module. This helps to prepare the upcoming [Gravity DEX Testnet Competition](https://gravitydex.io/).
