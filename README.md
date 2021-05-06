@@ -87,6 +87,9 @@ tester s 1 10000000uiris uatom 1000 500 1
 ```
 
 ## Testnet Information
+
+The repository for Gravity DEX testnets can be found [here](https://github.com/b-harvest/gravity-dex-testnets).
+
 ### Genesis 
 
 - [genesis.json](https://github.com/nodebreaker0-0/gentx/blob/main/genesis.json) file 
