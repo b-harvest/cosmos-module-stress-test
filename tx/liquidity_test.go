@@ -40,17 +40,30 @@ func TestFindAllPairs(t *testing.T) {
 		{
 			[]string{
 				"uatom",
-				"uregen",
-				"uxrn",
 				"ubtsg",
 				"udvpn",
 				"uxprt",
 				"uakt",
 				"uluna",
 				"ungm",
-				"ugcyb",
 				"uiris",
 				"xrun",
+				"uregen",
+				"udsm",
+				"ucom",
+				"ugcyb",
+			},
+		},
+		{
+			[]string{
+				"uatom",
+				"ubtsg",
+				"udvpn",
+				"uxprt",
+				"uakt",
+				"uluna",
+				"ungm",
+				"uiris",
 			},
 		},
 	}
