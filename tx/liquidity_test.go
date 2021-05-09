@@ -39,16 +39,17 @@ func TestFindAllPairs(t *testing.T) {
 	}{
 		{
 			[]string{
-				"uakt",
 				"uatom",
+				"uregen",
+				"uxrn",
 				"ubtsg",
 				"udvpn",
-				"ugcyb",
-				"uiris",
+				"uxprt",
+				"uakt",
 				"uluna",
 				"ungm",
-				"uxprt",
-				"uxrn",
+				"ugcyb",
+				"uiris",
 				"xrun",
 			},
 		},
@@ -57,7 +58,7 @@ func TestFindAllPairs(t *testing.T) {
 	for _, p := range pairs {
 		for i := 0; i < len(p.pairs)-1; i++ {
 			for j := i + 1; j < len(p.pairs); j++ {
-				t.Log(p.pairs[i], p.pairs[j])
+				fmt.Println(p.pairs[i], p.pairs[j])
 			}
 		}
 	}
