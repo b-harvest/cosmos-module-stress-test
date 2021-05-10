@@ -93,8 +93,8 @@ func CreateAllPoolsCmd() *cobra.Command {
 						"ucom",
 						"ugcyb",
 					},
-					sdktypes.NewInt(50_000_000),
-					sdktypes.NewInt(50_000_000),
+					sdktypes.NewInt(100560720641),
+					sdktypes.NewInt(16426115896095),
 				},
 			}
 
