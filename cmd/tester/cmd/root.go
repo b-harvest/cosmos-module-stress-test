@@ -29,6 +29,7 @@ func RootCmd() *cobra.Command {
 	cmd.AddCommand(DepositCmd())
 	cmd.AddCommand(WithdrawCmd())
 	cmd.AddCommand(SwapCmd())
+	cmd.AddCommand(IbctransferCmd())
 
 	return cmd
 }
