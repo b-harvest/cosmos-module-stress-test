@@ -12,7 +12,7 @@ import (
 	"github.com/b-harvest/liquidity-stress-test/tx"
 	"github.com/b-harvest/liquidity-stress-test/wallet"
 
-	sdkclient "github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
 
@@ -62,7 +62,7 @@ Example: $tester t transfer channel-0 cosmos1pacc0fr45hggcn8jrfhgnqf8vgyqna7r5sf
 			if err != nil {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
-			ibcclientCtx, err := sdkclient.GetClientTxContext(cmd)
+
 			if err != nil {
 				return err
 			}
@@ -72,7 +72,7 @@ Example: $tester t transfer channel-0 cosmos1pacc0fr45hggcn8jrfhgnqf8vgyqna7r5sf
 			}
 
 			defer client.Stop() // nolint: errcheck
-
+			ibcclientCtx := client.GetCLIContext()
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -132,7 +132,7 @@ Example: $tester t transfer channel-0 cosmos1pacc0fr45hggcn8jrfhgnqf8vgyqna7r5sf
 				accSeq := account.GetSequence()
 				accNum := account.GetAccountNumber()
 
-				msgs, err := tx.CreateTransferBot(ibcclientCtx, srcPort, srcChannel, coin, accAddr, receiver, msgNum)
+				msgs, err := tx.CreateTransferBot(cmd, ibcclientCtx, srcPort, srcChannel, coin, accAddr, receiver, msgNum)
 
 				if err != nil {
 					return fmt.Errorf("failed to create msg: %s", err)
@@ -168,5 +168,9 @@ Example: $tester t transfer channel-0 cosmos1pacc0fr45hggcn8jrfhgnqf8vgyqna7r5sf
 			return nil
 		},
 	}
+	cmd.Flags().String(flagPacketTimeoutHeight, ibctypes.DefaultRelativePacketTimeoutHeight, "Packet timeout block height. The timeout is disabled when set to 0-0.")
+	cmd.Flags().Uint64(flagPacketTimeoutTimestamp, ibctypes.DefaultRelativePacketTimeoutTimestamp, "Packet timeout timestamp in nanoseconds. Default is 10 minutes. The timeout is disabled when set to 0.")
+	cmd.Flags().Bool(flagAbsoluteTimeouts, false, "Timeout flags are used as absolute timeouts.")
+	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/b-harvest/liquidity-stress-test/client"
+	"github.com/spf13/cobra"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	sdkclienttx "github.com/cosmos/cosmos-sdk/client/tx"
@@ -27,6 +28,12 @@ type Ibctransaction struct {
 	Memo     string         `json:"memo"`
 }
 
+const (
+	flagPacketTimeoutHeight    = "packet-timeout-height"
+	flagPacketTimeoutTimestamp = "packet-timeout-timestamp"
+	flagAbsoluteTimeouts       = "absolute-timeouts"
+)
+
 // NewTransaction returns new Transaction object.
 func IbcNewtransaction(client *client.Client, chainID string, gasLimit uint64, fees sdktypes.Coins, memo string) *Transaction {
 	return &Transaction{
@@ -39,10 +46,46 @@ func IbcNewtransaction(client *client.Client, chainID string, gasLimit uint64, f
 }
 
 // MsgCreatePool creates create pool message and returns MsgCreatePool transaction message.
-func MsgTransfer(srcPort string, srcChannel string, coin sdktypes.Coin, sender string, receiver string, timeoutHeight clienttypes.Height, timeoutTimestamp uint64) (sdktypes.Msg, error) {
+func MsgTransfer(cmd *cobra.Command, ctx sdkclient.Context, srcPort string, srcChannel string, coin sdktypes.Coin, sender string, receiver string) (sdktypes.Msg, error) {
 	ibcsender, err := sdktypes.AccAddressFromBech32(sender)
 	if err != nil {
 		return &ibctypes.MsgTransfer{}, err
+	}
+	timeoutHeightStr, err := cmd.Flags().GetString(flagPacketTimeoutHeight)
+	if err != nil {
+		return nil, err
+	}
+	timeoutHeight, err := clienttypes.ParseHeight(timeoutHeightStr)
+	if err != nil {
+		return nil, err
+	}
+
+	timeoutTimestamp, err := cmd.Flags().GetUint64(flagPacketTimeoutTimestamp)
+	if err != nil {
+		return nil, err
+	}
+
+	absoluteTimeouts, err := cmd.Flags().GetBool(flagAbsoluteTimeouts)
+	if err != nil {
+		return nil, err
+	}
+
+	if !absoluteTimeouts {
+		consensusState, height, _, err := channelutils.QueryLatestConsensusState(ctx, srcPort, srcChannel)
+		if err != nil {
+			return nil, err
+		}
+
+		if !timeoutHeight.IsZero() {
+			absoluteHeight := height
+			absoluteHeight.RevisionNumber += timeoutHeight.RevisionNumber
+			absoluteHeight.RevisionHeight += timeoutHeight.RevisionHeight
+			timeoutHeight = absoluteHeight
+		}
+
+		if timeoutTimestamp != 0 {
+			timeoutTimestamp = consensusState.GetTimestamp() + timeoutTimestamp
+		}
 	}
 	msg := ibctypes.NewMsgTransfer(srcPort, srcChannel, coin, ibcsender, receiver, timeoutHeight, timeoutTimestamp)
 
@@ -53,25 +96,13 @@ func MsgTransfer(srcPort string, srcChannel string, coin sdktypes.Coin, sender s
 	return msg, nil
 }
 
-func (t *Transaction) CreateTransferBot(ctx sdkclient.Context, srcPort string, srcChannel string, coin sdktypes.Coin, sender string, receiver string, msgNum int) ([]sdktypes.Msg, error) {
+func (t *Transaction) CreateTransferBot(cmd *cobra.Command, ctx sdkclient.Context, srcPort string, srcChannel string, coin sdktypes.Coin, sender string, receiver string, msgNum int) ([]sdktypes.Msg, error) {
 
 	var msgs []sdktypes.Msg
 
 	for i := 0; i < msgNum; i++ {
-		consensusState, height, _, err := channelutils.QueryLatestConsensusState(ctx, srcPort, srcChannel)
-		if err != nil {
-			return []sdktypes.Msg{}, err
-		}
-		var timeoutHeight clienttypes.Height
-		var timeoutTimestamp uint64
 
-		absoluteHeight := height
-		absoluteHeight.RevisionNumber += timeoutHeight.RevisionNumber
-		absoluteHeight.RevisionHeight += timeoutHeight.RevisionHeight
-		timeoutHeight = absoluteHeight
-
-		timeoutTimestamp = consensusState.GetTimestamp() + timeoutTimestamp
-		msg, err := MsgTransfer(srcPort, srcChannel, coin, sender, receiver, timeoutHeight, timeoutTimestamp)
+		msg, err := MsgTransfer(cmd, ctx, srcPort, srcChannel, coin, sender, receiver)
 		if err != nil {
 			return []sdktypes.Msg{}, err
 		}
