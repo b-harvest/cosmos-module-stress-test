@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/b-harvest/liquidity-stress-test/config"
+	"github.com/nodebreaker0-0/cosmos-module-stress-test/config"
 )
 
 func TestReadConfigFile(t *testing.T) {

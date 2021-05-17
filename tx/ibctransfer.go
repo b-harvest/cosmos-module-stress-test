@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/b-harvest/liquidity-stress-test/client"
+	"github.com/nodebreaker0-0/cosmos-module-stress-test/client"
 	"github.com/spf13/cobra"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"

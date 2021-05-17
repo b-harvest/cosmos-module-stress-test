@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/b-harvest/liquidity-stress-test/client/clictx"
-	"github.com/b-harvest/liquidity-stress-test/client/rpc"
-	"github.com/b-harvest/liquidity-stress-test/codec"
+	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/clictx"
+	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/rpc"
+	"github.com/nodebreaker0-0/cosmos-module-stress-test/codec"
 
 	"github.com/test-go/testify/require"
 )
