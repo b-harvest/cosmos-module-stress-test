@@ -8,7 +8,7 @@
 
 ## Overview
 
-This program performs stress testing for the liquidity module. This helps to prepare the upcoming [Gravity DEX Testnet Competition](https://gravitydex.io/).
+This program performs stress testing for the Cosmos module. Support: Liquidity , IBC transfer
 
 **Note**: Requires [Go 1.15+](https://golang.org/dl/)
 ## Version
@@ -26,8 +26,8 @@ This stress testing program for the liquidity module requires a configuration fi
 
 ```bash
 # Clone the project 
-git clone https://github.com/nodebreaker0-0/cosmos-module-stress-testv.git
-cd liquidity-stress-test
+git clone https://github.com/nodebreaker0-0/cosmos-module-stress-test.git
+cd cosmos-stress-test
 
 # Build executable
 make install
@@ -48,7 +48,7 @@ make localnet
 `$ tester -h`
 
 ```bash
-liquidity stress testing program
+comos module stress testing program
 
 Usage:
   tester [command]
@@ -58,6 +58,7 @@ Available Commands:
   deposit     deposit new coins to every existing pools.
   help        Help about any command
   swap        swap some coins from the exisiting pools.
+  transfer    Transfer a fungible token through IBC.
   withdraw    withdraw coins from every existing pools.
 
 Flags:
@@ -82,40 +83,10 @@ tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF2775
 
 # tester swap [pool-id] [offer-coin] [demand-coin-denom][round] [tx-num] [msg-num]
 tester s 1 1000000uakt uatom 2 2 5
+
+# tester transfer [src-port] [src-channel] [receiver] [amount] [round] [tx-num] [msg-num]
+tester transfer transfer channel-0 cosmos18zh6zd2kwtekjeg0ns5xvn2x28hgj8n6gxhe8c 1stake 1 1 1
 ```
 
-### swap-testnet-2004
 
-```bash
-# First, you need to find the existing pools by querying https://competition.bharvest.io:1317/tendermint/liquidity/v1beta1/pools and
-# use pool information to deposit, withdraw, and swap. 
-tester d 1 1000000uatom,1000000uiris 500 500
-tester w 1 1pool7B550B734397473BCD4CE9429571870EB6372EF1268E6054B3B9D612AA41D4B5 500 500
-tester s 1 10000000uiris uatom 1000 500 1
-```
-
-## Testnet Information
-
-The repository for Gravity DEX testnets can be found [here](https://github.com/b-harvest/gravity-dex-testnets).
-
-### Gravity DEX Incentivized Testnet
-
-- Genesis file: [genesis.json](https://raw.githubusercontent.com/b-harvest/gravity-dex-testnets/main/competition-0001/genesis.json) file 
-- Chain ID: `competition-0001` 
-- Public REST API server: https://competition.bharvest.io:1317/
-- Public RPC address: https://competition.bharvest.io/
-- Public gRPC address: competition.bharvest.io:9090
-- Available Coin Types
-    - atom
-    - regen
-    - xrn
-    - btsg
-    - dvpn
-    - xprt
-    - akt
-    - luna
-    - ngm
-    - gcyb
-    - iris
-    - run
 
