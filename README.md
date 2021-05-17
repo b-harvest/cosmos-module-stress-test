@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">
-    Liquidity Module Stress Testing Program 🔧
+    Cosmos Module Stress Testing Program 🔧
 </h1>
 
 ## Overview
