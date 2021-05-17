@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/liquidity v1.2.4
-	github.com/tendermint/tendermint v0.34.10
+	github.com/tendermint/tendermint v0.34.9
 	github.com/test-go/testify v1.1.4
 	google.golang.org/grpc v1.37.0
 )

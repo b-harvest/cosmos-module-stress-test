@@ -5,8 +5,8 @@ import (
 
 	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/clictx"
 	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/grpc"
+	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/rpc"
 	"github.com/nodebreaker0-0/cosmos-module-stress-test/codec"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/rpc"
 )
 
 // Client is a wrapper for various clients.
