@@ -3,10 +3,10 @@ package client
 import (
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/clictx"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/grpc"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/rpc"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/codec"
+	"github.com/b-harvest/cosmos-module-stress-test/client/clictx"
+	"github.com/b-harvest/cosmos-module-stress-test/client/grpc"
+	"github.com/b-harvest/cosmos-module-stress-test/client/rpc"
+	"github.com/b-harvest/cosmos-module-stress-test/codec"
 )
 
 // Client is a wrapper for various clients.

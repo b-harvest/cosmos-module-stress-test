@@ -6,10 +6,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/client"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/config"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/tx"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/wallet"
+	"github.com/b-harvest/cosmos-module-stress-test/client"
+	"github.com/b-harvest/cosmos-module-stress-test/config"
+	"github.com/b-harvest/cosmos-module-stress-test/tx"
+	"github.com/b-harvest/cosmos-module-stress-test/wallet"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 

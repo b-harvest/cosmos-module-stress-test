@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/client/grpc"
-	"github.com/nodebreaker0-0/cosmos-module-stress-test/codec"
+	"github.com/b-harvest/cosmos-module-stress-test/client/grpc"
+	"github.com/b-harvest/cosmos-module-stress-test/codec"
 )
 
 var (
