@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/b-harvest/liquidity-stress-test/cmd/tester/cmd"
+	"github.com/b-harvest/cosmos-module-stress-test/cmd/tester/cmd"
 )
 
 func main() {

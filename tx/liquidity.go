@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/b-harvest/liquidity-stress-test/client"
+	"github.com/b-harvest/cosmos-module-stress-test/client"
 
 	liquiditytypes "github.com/tendermint/liquidity/x/liquidity/types"
 

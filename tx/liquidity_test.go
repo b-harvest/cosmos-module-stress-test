@@ -8,10 +8,10 @@ import (
 
 	"github.com/test-go/testify/require"
 
-	"github.com/b-harvest/liquidity-stress-test/client"
-	"github.com/b-harvest/liquidity-stress-test/config"
-	"github.com/b-harvest/liquidity-stress-test/tx"
-	"github.com/b-harvest/liquidity-stress-test/wallet"
+	"github.com/b-harvest/cosmos-module-stress-test/client"
+	"github.com/b-harvest/cosmos-module-stress-test/config"
+	"github.com/b-harvest/cosmos-module-stress-test/tx"
+	"github.com/b-harvest/cosmos-module-stress-test/wallet"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"

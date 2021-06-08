@@ -26,7 +26,7 @@ This stress testing program for the liquidity module requires a configuration fi
 
 ```bash
 # Clone the project 
-git clone https://github.com/b-harvest/liquidity-stress-test.git
+git clone https://github.com/b-harvest/cosmos-module-stress-test.git
 cd liquidity-stress-test
 
 # Build executable
@@ -36,7 +36,7 @@ make install
 ### Setup local testnet
 
 Just by running simple command `make localnet`, it bootstraps a single local testnet in your local computer and it
-automatically creates 4 genesis accounts with enough amounts of different types of coins. You can customize them in [this script](https://github.com/b-harvest/liquidity-stress-test/blob/main/scripts/localnet.sh#L9-L13) for your own usage.
+automatically creates 4 genesis accounts with enough amounts of different types of coins. You can customize them in [this script](https://github.com/b-harvest/cosmos-module-stress-test/blob/main/scripts/localnet.sh#L9-L13) for your own usage.
 
 ```bash
 # Run a single blockchain in your local computer 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/test-go/testify/require"
 
-	"github.com/b-harvest/liquidity-stress-test/wallet"
+	"github.com/b-harvest/cosmos-module-stress-test/wallet"
 )
 
 func TestRecoverAccAddrFromMnemonic(t *testing.T) {

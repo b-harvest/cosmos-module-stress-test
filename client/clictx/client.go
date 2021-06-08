@@ -1,7 +1,7 @@
 package clictx
 
 import (
-	"github.com/b-harvest/liquidity-stress-test/codec"
+	"github.com/b-harvest/cosmos-module-stress-test/codec"
 
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
