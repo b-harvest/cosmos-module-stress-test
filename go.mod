@@ -1,4 +1,4 @@
-module github.com/nodebreaker0-0/cosmos-module-stress-test
+module github.com/b-harvest/cosmos-module-stress-test
 
 go 1.16
 
