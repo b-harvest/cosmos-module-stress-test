@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/b-harvest/cosmos-module-stress-test/client"
@@ -13,7 +12,6 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/cobra"
@@ -33,40 +31,28 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 [tx-num]: how many transactions to be included in one round
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logLvl, err := zerolog.ParseLevel(logLevel)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			err := SetLogger(logLevel)
 			if err != nil {
 				return err
 			}
 
-			zerolog.SetGlobalLevel(logLvl)
-
-			switch logFormat {
-			case logLevelJSON:
-			case logLevelText:
-				// human-readable pretty logging is the default logging format
-				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-			default:
-				return fmt.Errorf("invalid logging format: %s", logFormat)
-			}
-
 			cfg, err := config.Read(config.DefaultConfigPath)
 			if err != nil {
-				return fmt.Errorf("failed to read config file: %s", err)
+				return err
 			}
 
 			client, err := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
 			if err != nil {
-				return fmt.Errorf("failed to connect clients: %s", err)
+				return err
 			}
-
 			defer client.Stop() // nolint: errcheck
-
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
 
 			chainID, err := client.RPC.GetNetworkChainID(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to get chain id: %s", err)
+				return err
 			}
 
 			poolId, err := strconv.ParseUint(args[0], 10, 64)
@@ -97,7 +83,7 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 
 			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
 			if err != nil {
-				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
+				return err
 			}
 
 			msg, err := tx.MsgWithdraw(accAddr, poolId, poolCoin)
