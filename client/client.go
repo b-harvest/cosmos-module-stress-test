@@ -29,7 +29,7 @@ func NewClient(rpcURL string, grpcURL string) (*Client, error) {
 
 	log.Debug().Msg("connecting clients")
 
-	rpcClient, err := rpc.NewClient(rpcURL, 5)
+	rpcClient, err := rpc.NewClient(rpcURL, DefaultRPCTimeout)
 	if err != nil {
 		return &Client{}, err
 	}
