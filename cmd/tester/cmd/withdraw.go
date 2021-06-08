@@ -13,7 +13,6 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/rs/zerolog/log"
-
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +24,7 @@ func WithdrawCmd() *cobra.Command {
 		Args:    cobra.ExactArgs(4),
 		Long: `Withdraw pool coin from the pool in round times with a number of transaction message.
 
-Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF27752 10 10
+Example: $ tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6CA18CF27752 10 10
 
 [round]: how many rounds to run
 [tx-num]: how many transactions to be included in one round
@@ -73,12 +72,12 @@ Example: $tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED6
 
 			round, err := strconv.Atoi(args[2])
 			if err != nil {
-				return fmt.Errorf("round must be integer: %s", args[0])
+				return fmt.Errorf("round must be integer: %s", args[2])
 			}
 
 			txNum, err := strconv.Atoi(args[3])
 			if err != nil {
-				return fmt.Errorf("txNum must be integer: %s", args[0])
+				return fmt.Errorf("tx-num must be integer: %s", args[3])
 			}
 
 			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")

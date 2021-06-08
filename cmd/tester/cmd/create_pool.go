@@ -14,12 +14,10 @@ import (
 	liqtypes "github.com/tendermint/liquidity/x/liquidity/types"
 
 	"github.com/rs/zerolog/log"
-
 	"github.com/spf13/cobra"
 )
 
-// The Gravity DEX testnet has 11 coin types available.
-// This will create a total number of 55 pairs of pools.
+// The Gravity DEX testnet has 11 denom types available.
 var denomPairs = []string{
 	"uatom",
 	"ubtsg",
@@ -31,8 +29,6 @@ var denomPairs = []string{
 	"uiris",
 	"xrun",
 	"uregen",
-	"udsm",
-	"ucom",
 	"ugcyb",
 }
 
@@ -82,8 +78,8 @@ func CreatePoolsCmd() *cobra.Command {
 				{
 					liqtypes.DefaultPoolTypeId,
 					denomPairs,
-					sdktypes.NewInt(100560720641),
-					sdktypes.NewInt(16426115896095),
+					sdktypes.NewInt(1_000_000_000),
+					sdktypes.NewInt(1_000_000_000),
 				},
 			}
 

@@ -102,14 +102,14 @@ func MsgSwap(poolCreator string, poolId uint64, swapTypeId uint32, offerCoin sdk
 }
 
 // CreateSwapBot creates a bot that makes multiple swaps which increases and decreases
-func (t *Transaction) CreateSwapBot(ctx context.Context, poolCreator string, poolId uint64, offerCoin sdktypes.Coin, msgNum int) ([]sdktypes.Msg, error) {
+func (t *Transaction) CreateSwapBot(ctx context.Context, poolCreator string,
+	poolId uint64, offerCoin sdktypes.Coin, demandCoinDenom string, msgNum int) ([]sdktypes.Msg, error) {
 	pool, err := t.Client.GRPC.GetPool(ctx, poolId)
 	if err != nil {
 		return []sdktypes.Msg{}, err
 	}
 
 	reserveCoins := sdktypes.NewCoins()
-
 	for _, denom := range pool.ReserveCoinDenoms {
 		coin, err := t.Client.GRPC.GetBalance(ctx, pool.GetReserveAccount().String(), denom)
 		if err != nil {
@@ -133,7 +133,7 @@ func (t *Transaction) CreateSwapBot(ctx context.Context, poolCreator string, poo
 			orderPrice = orderPrice.Sub(orderPricePercentage)
 		}
 
-		msg, err := MsgSwap(poolCreator, poolId, uint32(1), offerCoin, pool.ReserveCoinDenoms[1], orderPrice, sdktypes.NewDecWithPrec(3, 3))
+		msg, err := MsgSwap(poolCreator, poolId, uint32(1), offerCoin, demandCoinDenom, orderPrice, sdktypes.NewDecWithPrec(3, 3))
 		if err != nil {
 			return []sdktypes.Msg{}, err
 		}

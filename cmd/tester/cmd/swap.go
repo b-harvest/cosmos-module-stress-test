@@ -13,22 +13,22 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/rs/zerolog/log"
-
 	"github.com/spf13/cobra"
 )
 
 func SwapCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "swap [pool-id] [offer-coin] [demand-coin-denom] [round] [tx-num] [msg-num]",
-		Short:   "swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of transaction messages",
+		Short:   "swap offer coin with demand coin.",
 		Aliases: []string{"s"},
 		Args:    cobra.ExactArgs(6),
-		Long: `Swap offer coin with demand coin from the liquidity pool with the given order price in round times with a number of transaction messages.
+		Long: `Swap offer coin with demand coin from the liquidity pool in round times with a number of tx and msg messages.
 
-Example: $tester s 1 50000000uakt uatom 10 10 10
+Example: $ tester s 1 5000000ubtsg uatom 5 5 2
 
-[round]: how many rounds to run
-[tx-num]: how many transactions to be included in one round
+round: how many rounds to run
+tx-num: how many transactions to be included in a block
+msg-num: how many transaction messages to be included in a transaction
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -49,11 +49,6 @@ Example: $tester s 1 50000000uakt uatom 10 10 10
 				return err
 			}
 			defer client.Stop() // nolint: errcheck
-
-			chainID, err := client.RPC.GetNetworkChainID(ctx)
-			if err != nil {
-				return err
-			}
 
 			poolId, err := strconv.ParseUint(args[0], 10, 64)
 			if err != nil {
@@ -77,17 +72,22 @@ Example: $tester s 1 50000000uakt uatom 10 10 10
 
 			round, err := strconv.Atoi(args[3])
 			if err != nil {
-				return fmt.Errorf("round must be integer: %s", args[0])
+				return fmt.Errorf("round must be integer: %s", args[3])
 			}
 
 			txNum, err := strconv.Atoi(args[4])
 			if err != nil {
-				return fmt.Errorf("txNum must be integer: %s", args[0])
+				return fmt.Errorf("tx-num must be integer: %s", args[4])
 			}
 
 			msgNum, err := strconv.Atoi(args[5])
 			if err != nil {
-				return fmt.Errorf("txNum must be integer: %s", args[0])
+				return fmt.Errorf("msg-num must be integer: %s", args[5])
+			}
+
+			chainID, err := client.RPC.GetNetworkChainID(ctx)
+			if err != nil {
+				return err
 			}
 
 			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
@@ -112,13 +112,9 @@ Example: $tester s 1 50000000uakt uatom 10 10 10
 				accSeq := account.GetSequence()
 				accNum := account.GetAccountNumber()
 
-				msgs, err := tx.CreateSwapBot(ctx, accAddr, poolId, offerCoin, msgNum)
+				msgs, err := tx.CreateSwapBot(ctx, accAddr, poolId, offerCoin, args[2], msgNum)
 				if err != nil {
 					return fmt.Errorf("failed to create msg: %s", err)
-				}
-
-				for _, msg := range msgs {
-					fmt.Println("msg: ", msg)
 				}
 
 				for i := 0; i < txNum; i++ {

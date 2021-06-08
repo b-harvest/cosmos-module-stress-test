@@ -11,6 +11,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var (
+	DefaultRPCTimeout  = int64(5)
+	DefaultGRPCTimeout = int64(5)
+)
+
 // Client is a wrapper for various clients.
 type Client struct {
 	CliCtx *clictx.Client
@@ -24,12 +29,12 @@ func NewClient(rpcURL string, grpcURL string) (*Client, error) {
 
 	log.Debug().Msg("connecting clients")
 
-	rpcClient, err := rpc.NewClient(rpcURL, 5)
+	rpcClient, err := rpc.NewClient(rpcURL, DefaultRPCTimeout)
 	if err != nil {
 		return &Client{}, err
 	}
 
-	grpcClient, err := grpc.NewClient(grpcURL, 5)
+	grpcClient, err := grpc.NewClient(grpcURL, DefaultGRPCTimeout)
 	if err != nil {
 		return &Client{}, err
 	}
