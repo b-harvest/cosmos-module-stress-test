@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/b-harvest/cosmos-module-stress-test/client"
 	"github.com/b-harvest/cosmos-module-stress-test/config"
@@ -14,87 +13,73 @@ import (
 
 	liqtypes "github.com/tendermint/liquidity/x/liquidity/types"
 
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-
 	"github.com/spf13/cobra"
 )
 
-// CreateAllPoolsCmd creates liquidity pools of every pair of coins exist in the network.
+// The Gravity DEX testnet has 11 denom types available.
+var denomPairs = []string{
+	"uatom",
+	"ubtsg",
+	"udvpn",
+	"uxprt",
+	"uakt",
+	"uluna",
+	"ungm",
+	"uiris",
+	"xrun",
+	"uregen",
+	"ugcyb",
+}
+
+// CreatePoolsCmd creates liquidity pools of every pair of coins exist in the network.
 // This command is useful for stress testing to bootstrap test pools as soon as new network is spun up.
-// Since the Gravity DEX testnet will have 11 coin types available, this will create a total number of 55 pairs of pools.
-func CreateAllPoolsCmd() *cobra.Command {
+func CreatePoolsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "create-all-pools",
-		Short:   "create liquidity pools of every pair of coins exist in the network.",
-		Aliases: []string{"create-all", "ca"},
+		Use:     "create-pools",
+		Short:   "create liquidity pools with the sample denom pairs.",
+		Aliases: []string{"create", "c", "cp"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logLvl, err := zerolog.ParseLevel(logLevel)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			err := SetLogger(logLevel)
 			if err != nil {
 				return err
 			}
 
-			zerolog.SetGlobalLevel(logLvl)
-
-			switch logFormat {
-			case logLevelJSON:
-			case logLevelText:
-				// human-readable pretty logging is the default logging format
-				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-			default:
-				return fmt.Errorf("invalid logging format: %s", logFormat)
-			}
-
 			cfg, err := config.Read(config.DefaultConfigPath)
 			if err != nil {
-				return fmt.Errorf("failed to read config file: %s", err)
+				return err
 			}
 
 			client, err := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
 			if err != nil {
-				return fmt.Errorf("failed to connect clients: %s", err)
+				return err
 			}
-
 			defer client.Stop() // nolint: errcheck
-
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
 
 			chainID, err := client.RPC.GetNetworkChainID(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to get chain id: %s", err)
+				return err
 			}
 
 			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
 			if err != nil {
-				return fmt.Errorf("failed to retrieve account and private key from mnemonic: %s", err)
+				return err
 			}
 
 			pools := []struct {
 				poolTypeId   uint32
-				pairs        []string
+				denomPairs   []string
 				depositCoinA sdktypes.Int
 				depositCoinB sdktypes.Int
 			}{
 				{
 					liqtypes.DefaultPoolTypeId,
-					[]string{
-						"uatom",
-						"ubtsg",
-						"udvpn",
-						"uxprt",
-						"uakt",
-						"uluna",
-						"ungm",
-						"uiris",
-						"xrun",
-						"uregen",
-						"udsm",
-						"ucom",
-						"ugcyb",
-					},
-					sdktypes.NewInt(100560720641),
-					sdktypes.NewInt(16426115896095),
+					denomPairs,
+					sdktypes.NewInt(1_000_000_000),
+					sdktypes.NewInt(1_000_000_000),
 				},
 			}
 
@@ -102,21 +87,21 @@ func CreateAllPoolsCmd() *cobra.Command {
 				totalNum := 0
 				count := 0
 
-				for i := len(p.pairs) - 1; i > 0; i-- {
+				for i := len(p.denomPairs) - 1; i > 0; i-- {
 					totalNum = totalNum + i
 				}
 
 				var msgs []sdktypes.Msg
 
 				// find all pairs of coins. {coinA, coinB} and {coinB coinA} are excluded.
-				for i := 0; i < len(p.pairs)-1; i++ {
-					for j := i + 1; j < len(p.pairs); j++ {
+				for i := 0; i < len(p.denomPairs)-1; i++ {
+					for j := i + 1; j < len(p.denomPairs); j++ {
 						count = count + 1
-						log.Debug().Msgf("creating a pair of %s/%s, out of (%d/%d)", p.pairs[i], p.pairs[j], count, totalNum)
+						log.Debug().Msgf("creating a pair of %s/%s, out of (%d/%d)", p.denomPairs[i], p.denomPairs[j], count, totalNum)
 
 						depositCoins := sdktypes.NewCoins(
-							sdktypes.NewCoin(p.pairs[i], p.depositCoinA),
-							sdktypes.NewCoin(p.pairs[j], p.depositCoinB),
+							sdktypes.NewCoin(p.denomPairs[i], p.depositCoinA),
+							sdktypes.NewCoin(p.denomPairs[j], p.depositCoinB),
 						)
 
 						msg, err := tx.MsgCreatePool(accAddr, p.poolTypeId, depositCoins)

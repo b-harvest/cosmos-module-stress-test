@@ -20,7 +20,7 @@ import (
 )
 
 // Transaction is an object that has common fields when signing transaction.
-type Ibctransaction struct {
+type IBCtransaction struct {
 	Client   *client.Client `json:"client"`
 	ChainID  string         `json:"chain_id"`
 	GasLimit uint64         `json:"gas_limit"`
