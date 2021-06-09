@@ -7,12 +7,12 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/pelletier/go-toml v1.9.0
 	github.com/rs/zerolog v1.21.0
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/liquidity v1.2.4
 	github.com/tendermint/tendermint v0.34.9
 	github.com/test-go/testify v1.1.4
-	google.golang.org/grpc v1.35.0
+	google.golang.org/grpc v1.37.0
 )
 
 replace (
