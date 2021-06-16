@@ -20,16 +20,10 @@ import (
 // The Gravity DEX testnet has 11 denom types available.
 var denomPairs = []string{
 	"uatom",
-	"ubtsg",
-	"udvpn",
-	"uxprt",
-	"uakt",
-	"uluna",
-	"ungm",
 	"uiris",
-	"xrun",
-	"uregen",
-	"ugcyb",
+	"ukava",
+	"uluna",
+	"uscrt",
 }
 
 // CreatePoolsCmd creates liquidity pools of every pair of coins exist in the network.
