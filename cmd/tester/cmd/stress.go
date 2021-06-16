@@ -114,12 +114,15 @@ func StressTestCmd() *cobra.Command {
 				nextHeight := startingHeight + i
 				var txBytes [][]byte
 
+				time.Sleep(time.Second) // Wait for the account sequence to increase.
+
 				account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
 				if err != nil {
 					return fmt.Errorf("failed to get account information: %s", err)
 				}
 
 				accSeq := account.GetSequence()
+				log.Info().Msgf("account sequence number: %d", accSeq)
 				accNum := account.GetAccountNumber()
 
 				msgs, err := tx.CreateSwapBot(ctx, accAddr, poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
@@ -144,10 +147,9 @@ func StressTestCmd() *cobra.Command {
 						return fmt.Errorf("failed to broadcast transaction: %s", err)
 					}
 					pendingTxHashes[resp.TxResponse.TxHash] = struct{}{}
-					fmt.Print(".")
-					time.Sleep(500 * time.Microsecond)
+					//fmt.Print(".")
 				}
-				fmt.Println()
+				//fmt.Println()
 
 				// Wait for the block to be committed.
 				for {
@@ -160,7 +162,7 @@ func StressTestCmd() *cobra.Command {
 					} else if st.SyncInfo.LatestBlockHeight > nextHeight {
 						return fmt.Errorf("block has past")
 					}
-					time.Sleep(200 * time.Millisecond)
+					time.Sleep(100 * time.Millisecond)
 				}
 
 				r, err := client.GetRPCClient().Block(ctx, &nextHeight)
@@ -170,7 +172,10 @@ func StressTestCmd() *cobra.Command {
 				for _, tx := range r.Block.Txs {
 					delete(pendingTxHashes, strings.ToUpper(hex.EncodeToString(tx.Hash())))
 				}
-				log.Info().Msgf("height: %d, number of missing txs: %d", nextHeight, len(pendingTxHashes))
+				log.Info().Msgf("height: %d, block time: %s, number of txs: %d, number of missing txs: %d",
+					nextHeight, r.Block.Time.Format(time.RFC3339Nano), len(r.Block.Txs), len(pendingTxHashes))
+
+				time.Sleep(time.Second)
 			}
 
 			return nil
