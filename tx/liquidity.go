@@ -146,7 +146,9 @@ func (t *Transaction) CreateSwapBot(ctx context.Context, poolCreator string,
 // Sign signs message(s) with the account's private key and braodacasts the message(s).
 func (t *Transaction) Sign(ctx context.Context, accSeq uint64, accNum uint64, privKey *secp256k1.PrivKey, msgs ...sdktypes.Msg) ([]byte, error) {
 	txBuilder := t.Client.CliCtx.TxConfig.NewTxBuilder()
-	txBuilder.SetMsgs(msgs...)
+	if err := txBuilder.SetMsgs(msgs...); err != nil {
+		return nil, err
+	}
 	txBuilder.SetGasLimit(t.GasLimit)
 	txBuilder.SetFeeAmount(t.Fees)
 	txBuilder.SetMemo(t.Memo)

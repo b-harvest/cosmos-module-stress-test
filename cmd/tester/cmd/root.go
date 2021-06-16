@@ -34,6 +34,7 @@ func RootCmd() *cobra.Command {
 	cmd.AddCommand(WithdrawCmd())
 	cmd.AddCommand(SwapCmd())
 	cmd.AddCommand(IBCtransferCmd())
+	cmd.AddCommand(StressTestCmd())
 
 	return cmd
 }
