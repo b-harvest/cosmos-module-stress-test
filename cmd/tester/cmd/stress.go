@@ -305,7 +305,7 @@ func StressTestCmd() *cobra.Command {
 						return fmt.Errorf("broadcast tx: %w", err)
 					}
 					if resp.TxResponse.Code != 0 {
-						if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x20 {
+						if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x14 || resp.TxResponse.Code == 0x20 {
 							log.Warn().Msgf("received %#v, using the next account", resp.TxResponse)
 							if err := d.Next(); err != nil {
 								return fmt.Errorf("next account: %w", err)
