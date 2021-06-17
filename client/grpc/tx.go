@@ -17,7 +17,7 @@ func (c *Client) BroadcastTx(ctx context.Context, txBytes []byte) (*tx.Broadcast
 
 	req := &tx.BroadcastTxRequest{
 		TxBytes: txBytes,
-		Mode:    tx.BroadcastMode_BROADCAST_MODE_ASYNC, // should use async mode for the stress testing
+		Mode:    tx.BroadcastMode_BROADCAST_MODE_SYNC, // should use async mode for the stress testing
 	}
 
 	return client.BroadcastTx(ctx, req)

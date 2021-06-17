@@ -128,7 +128,7 @@ func (t *Transaction) CreateSwapBot(ctx context.Context, poolCreator string,
 		orderPricePercentage := orderPrice.Mul(random.Quo(sdktypes.NewDec(100)))
 
 		if i%2 == 0 {
-			orderPrice = orderPrice.Add(orderPricePercentage)
+			orderPrice = orderPrice.Sub(orderPricePercentage)
 		} else {
 			orderPrice = orderPrice.Sub(orderPricePercentage)
 		}
