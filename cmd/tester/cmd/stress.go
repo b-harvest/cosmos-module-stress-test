@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -218,6 +220,15 @@ func StressTestCmd() *cobra.Command {
 
 			tr := NewTxTracker()
 
+			f, err := os.OpenFile("result.csv", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+			if err != nil {
+				return fmt.Errorf("open file: %w", err)
+			}
+			defer f.Close()
+
+			w := csv.NewWriter(f)
+			defer w.Flush()
+
 			for i := int64(0); i < heightSpan; i++ {
 				fmt.Println(strings.Repeat("-", 80))
 
@@ -286,6 +297,16 @@ func StressTestCmd() *cobra.Command {
 
 					log.Info().Msgf("> height: %d, block time: %s, block duration: %s, num missing txs: %d, avg delay: %f",
 						height, blockTime.Format(time.RFC3339Nano), blockDuration, numMissingTxs, avgDelay)
+					if err := w.Write([]string{
+						strconv.FormatInt(height, 10),
+						blockTime.Format(time.RFC3339Nano),
+						blockDuration.String(),
+						strconv.Itoa(numMissingTxs),
+						strconv.FormatFloat(avgDelay, 'f', -1, 64),
+					}); err != nil {
+						return fmt.Errorf("write record")
+					}
+					w.Flush()
 				}
 			}
 

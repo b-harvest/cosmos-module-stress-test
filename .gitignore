@@ -21,3 +21,4 @@ data
 config.toml
 
 .idea/
+*.csv
