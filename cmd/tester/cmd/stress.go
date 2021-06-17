@@ -289,13 +289,12 @@ func StressTestCmd() *cobra.Command {
 
 				nextHeight := startingHeight + i
 
-				msgs, err := tx.CreateSwapBot(ctx, d.Addr(), poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
-				if err != nil {
-					return fmt.Errorf("failed to create msg: %s", err)
-				}
-
 				started := time.Now()
 				for i := 0; i < numTxsPerBlock; i++ {
+					msgs, err := tx.CreateSwapBot(ctx, d.Addr(), poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
+					if err != nil {
+						return fmt.Errorf("failed to create msg: %s", err)
+					}
 					accSeq := d.IncAccSeq()
 					txByte, err := tx.Sign(ctx, accSeq, d.AccNum(), d.PrivKey(), msgs...)
 					if err != nil {
