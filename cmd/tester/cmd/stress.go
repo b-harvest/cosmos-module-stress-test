@@ -310,6 +310,8 @@ func StressTestCmd() *cobra.Command {
 							if err := d.Next(); err != nil {
 								return fmt.Errorf("next account: %w", err)
 							}
+							time.Sleep(time.Second)
+							i--
 							log.Warn().Msgf("next account address: %s", d.Addr())
 						} else {
 							panic(fmt.Sprintf("%#v\n", resp.TxResponse))
