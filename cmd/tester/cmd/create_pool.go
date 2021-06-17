@@ -58,7 +58,7 @@ func CreatePoolsCmd() *cobra.Command {
 				return err
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonics[0], "")
 			if err != nil {
 				return err
 			}

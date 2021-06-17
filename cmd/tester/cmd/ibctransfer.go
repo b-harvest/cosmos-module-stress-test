@@ -98,7 +98,7 @@ msg-num: how many transaction messages to be included in a transaction
 				return fmt.Errorf("txNum must be integer: %s", args[0])
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonics[0], "")
 			if err != nil {
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}

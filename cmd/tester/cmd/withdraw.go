@@ -80,7 +80,7 @@ Example: $ tester w 1 10pool94720F40B38D6DD93DCE184D264D4BE089EDF124A9C0658CDBED
 				return fmt.Errorf("tx-num must be integer: %s", args[3])
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
+			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonics[0], "")
 			if err != nil {
 				return err
 			}

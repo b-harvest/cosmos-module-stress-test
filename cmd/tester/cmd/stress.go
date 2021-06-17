@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -114,6 +115,66 @@ func AvgDelays(delays []int64) float64 {
 	return sum / float64(len(delays))
 }
 
+type AccountDispenser struct {
+	c         *client.Client
+	mnemonics []string
+	i         int
+	addr      string
+	privKey   *secp256k1.PrivKey
+	accSeq    uint64
+	accNum    uint64
+}
+
+func NewAccountDispenser(c *client.Client, mnemonics []string) *AccountDispenser {
+	return &AccountDispenser{
+		c:         c,
+		mnemonics: mnemonics,
+	}
+}
+
+func (d *AccountDispenser) Next() error {
+	mnemonic := d.mnemonics[d.i]
+	addr, privKey, err := wallet.RecoverAccountFromMnemonic(mnemonic, "")
+	if err != nil {
+		return err
+	}
+	d.addr = addr
+	d.privKey = privKey
+	acc, err := d.c.GRPC.GetBaseAccountInfo(context.Background(), addr)
+	if err != nil {
+		return fmt.Errorf("get base account info: %w", err)
+	}
+	d.accSeq = acc.GetSequence()
+	d.accNum = acc.GetAccountNumber()
+	d.i++
+	if d.i >= len(d.mnemonics) {
+		d.i = 0
+	}
+	return nil
+}
+
+func (d *AccountDispenser) Addr() string {
+	return d.addr
+}
+
+func (d *AccountDispenser) PrivKey() *secp256k1.PrivKey {
+	return d.privKey
+}
+
+func (d *AccountDispenser) AccSeq() uint64 {
+	return d.accSeq
+}
+
+func (d *AccountDispenser) AccNum() uint64 {
+	return d.accNum
+}
+
+func (d *AccountDispenser) IncAccSeq() uint64 {
+	r := d.accSeq
+	d.accSeq++
+	return r
+}
+
 func StressTestCmd() *cobra.Command {
 	var (
 		heightSpan     int64
@@ -176,10 +237,7 @@ func StressTestCmd() *cobra.Command {
 				return err
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonic, "")
-			if err != nil {
-				return err
-			}
+			d := NewAccountDispenser(client, cfg.Custom.Mnemonics)
 
 			st, err := client.RPC.Status(ctx)
 			if err != nil {
@@ -205,13 +263,10 @@ func StressTestCmd() *cobra.Command {
 			}
 			log.Info().Msgf("starting at %d", startingHeight)
 
-			acc, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
-			if err != nil {
-				return fmt.Errorf("get base account info: %w", err)
+			if err := d.Next(); err != nil {
+				return fmt.Errorf("next account: %w", err)
 			}
-			accSeq := acc.GetSequence()
-			accNum := acc.GetAccountNumber()
-			log.Info().Msgf("starting sequence: %d", accSeq)
+			log.Info().Msgf("starting sequence: %d", d.AccSeq())
 
 			gasLimit := uint64(cfg.Custom.GasLimit)
 			fees := sdk.NewCoins(sdk.NewCoin(cfg.Custom.FeeDenom, sdk.NewInt(cfg.Custom.FeeAmount)))
@@ -235,18 +290,18 @@ func StressTestCmd() *cobra.Command {
 				nextHeight := startingHeight + i
 				var txBytes [][]byte
 
-				msgs, err := tx.CreateSwapBot(ctx, accAddr, poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
+				msgs, err := tx.CreateSwapBot(ctx, d.Addr(), poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
 				if err != nil {
 					return fmt.Errorf("failed to create msg: %s", err)
 				}
 
 				started := time.Now()
 				for i := 0; i < numTxsPerBlock; i++ {
-					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
+					accSeq := d.IncAccSeq()
+					txByte, err := tx.Sign(ctx, accSeq, d.AccNum(), d.PrivKey(), msgs...)
 					if err != nil {
 						return fmt.Errorf("failed to sign and broadcast: %s", err)
 					}
-					accSeq++
 					txBytes = append(txBytes, txByte)
 				}
 				log.Debug().Msgf("took %s signing txs", time.Since(started))
@@ -258,9 +313,18 @@ func StressTestCmd() *cobra.Command {
 						return fmt.Errorf("failed to broadcast transaction: %s", err)
 					}
 					if resp.TxResponse.Code != 0 {
-						panic(fmt.Sprintf("%#v\n", resp.TxResponse))
+						if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x20 {
+							log.Warn().Msgf("received %#v, using the next account", resp.TxResponse)
+							if err := d.Next(); err != nil {
+								return fmt.Errorf("next account: %w", err)
+							}
+							log.Warn().Msgf("next account address: %s", d.Addr())
+						} else {
+							panic(fmt.Sprintf("%#v\n", resp.TxResponse))
+						}
+					} else {
+						tr.TxBroadcast(resp.TxResponse.TxHash, nextHeight)
 					}
-					tr.TxBroadcast(resp.TxResponse.TxHash, nextHeight)
 				}
 				log.Debug().Msgf("took %s broadcasting txs", time.Since(started))
 
