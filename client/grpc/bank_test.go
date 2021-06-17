@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBaseAccountInfo(t *testing.T) {
+func TestBalance(t *testing.T) {
 	address := "cosmos1zaavvzxez0elundtn32qnk9lkm8kmcszzsv80v"
-	resp, err := c.GetBaseAccountInfo(context.Background(), address)
+	denom := "uatom"
+	resp, err := c.GetBalance(context.Background(), address, denom)
 	require.NoError(t, err)
 
-	t.Log(resp.GetAccountNumber())
-	t.Log(resp.GetSequence())
+	t.Log(resp)
 }
