@@ -9,7 +9,6 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	tenderminttypes "github.com/tendermint/tendermint/types"
@@ -73,41 +72,21 @@ func (tr *TxTracker) TxsCommitted(hashes []string, height int64) (finishedHeight
 	return
 }
 
-func (tr *TxTracker) AllDelays(currentHeight int64) (delays []int64) {
-	for _, tx := range tr.txs {
-		var delay int64
-		if tx.CommittedHeight != 0 {
-			delay = tx.CommittedHeight - tx.BroadcastHeight
-		} else {
-			delay = currentHeight - tx.BroadcastHeight
+func (tr *TxTracker) Delays(height int64) (delays []int64) {
+	for _, tx := range tr.txsByHeight[height] {
+		if tx.CommittedHeight == 0 {
+			panic("delays must be calculated on the finished block")
 		}
+		delay := tx.CommittedHeight - tx.BroadcastHeight
 		delays = append(delays, delay)
 	}
 	return
 }
 
-func (tr *TxTracker) Delays(currentHeight int64) (delays []int64) {
-	for _, tx := range tr.txs {
-		var delay int64
-		if tx.CommittedHeight != 0 {
-			delay = tx.CommittedHeight - tx.BroadcastHeight
-		} else {
-			delay = currentHeight - tx.BroadcastHeight
-		}
-		if delay > 0 {
-			delays = append(delays, currentHeight-tx.BroadcastHeight)
-		}
-	}
-	return
-}
-
-func (tr *TxTracker) NumMissedTxs(currentHeight int64) int {
+func (tr *TxTracker) NumMissingTxs(height int64) int {
 	n := 0
-	for _, tx := range tr.txs {
-		if tx.CommittedHeight != 0 {
-			continue
-		}
-		if currentHeight-tx.BroadcastHeight > 5 {
+	for _, tx := range tr.txsByHeight[height] {
+		if tx.CommittedHeight != tx.BroadcastHeight {
 			n++
 		}
 	}
@@ -140,9 +119,9 @@ func StressTestCmd() *cobra.Command {
 		numMsgsPerTx   int
 	)
 	cmd := &cobra.Command{
-		Use:   "stress-test [pool-id] [offer-coin] [starting-height]",
+		Use:   "stress-test [pool-id] [offer-coin]",
 		Short: "run stress test",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
@@ -178,11 +157,6 @@ func StressTestCmd() *cobra.Command {
 				return fmt.Errorf("invalid offer coin: %w", err)
 			}
 
-			startingHeight, err := strconv.ParseInt(args[2], 10, 64)
-			if err != nil {
-				return fmt.Errorf("invalid starting height: %w", err)
-			}
-
 			pool, err := client.GRPC.GetPool(ctx, poolID)
 			if err != nil {
 				return fmt.Errorf("get pool: %w", err)
@@ -205,108 +179,81 @@ func StressTestCmd() *cobra.Command {
 				return err
 			}
 
-			gasLimit := uint64(cfg.Custom.GasLimit)
-			fees := sdk.NewCoins(sdk.NewCoin(cfg.Custom.FeeDenom, sdk.NewInt(cfg.Custom.FeeAmount)))
-			memo := cfg.Custom.Memo
+			st, err := client.RPC.Status(ctx)
+			if err != nil {
+				return fmt.Errorf("get status: %w", err)
+			}
+			currentHeight := st.SyncInfo.LatestBlockHeight
+			log.Info().Msgf("current height: %d, waiting for the next block", currentHeight)
 
-			tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
+			blockTimes := make(map[int64]time.Time)
 
-			log.Info().Msg("waiting until the block height reaches the starting height")
+			var startingHeight int64
 			for {
 				st, err := client.RPC.Status(ctx)
 				if err != nil {
 					return fmt.Errorf("get status: %w", err)
 				}
-				if st.SyncInfo.LatestBlockHeight == startingHeight-1 {
+				blockTimes[st.SyncInfo.LatestBlockHeight] = st.SyncInfo.LatestBlockTime
+				if st.SyncInfo.LatestBlockHeight > currentHeight {
+					startingHeight = st.SyncInfo.LatestBlockHeight + 1
 					break
-				} else if st.SyncInfo.LatestBlockHeight >= startingHeight {
-					return fmt.Errorf("the block height has already past the starting height")
 				}
 				time.Sleep(100 * time.Millisecond)
 			}
-			log.Info().Msg("reached the starting height")
+			log.Info().Msgf("starting at %d", startingHeight)
 
 			acc, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
 			if err != nil {
 				return fmt.Errorf("get base account info: %w", err)
 			}
-			seq := acc.GetSequence()
+			accSeq := acc.GetSequence()
+			accNum := acc.GetAccountNumber()
+			log.Info().Msgf("starting sequence: %d", accSeq)
+
+			gasLimit := uint64(cfg.Custom.GasLimit)
+			fees := sdk.NewCoins(sdk.NewCoin(cfg.Custom.FeeDenom, sdk.NewInt(cfg.Custom.FeeAmount)))
+			memo := cfg.Custom.Memo
+			tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
 
 			tr := NewTxTracker()
-			prevSeq := uint64(0)
-
-			broadcastTxHashes := make(map[string]struct{})
 
 			for i := int64(0); i < heightSpan; i++ {
-				fmt.Println(strings.Repeat("=", 70))
+				fmt.Println(strings.Repeat("-", 80))
 
 				nextHeight := startingHeight + i
 				var txBytes [][]byte
-
-				started := time.Now()
-				var account types.BaseAccount
-				for {
-					var err error
-					account, err = client.GRPC.GetBaseAccountInfo(ctx, accAddr)
-					if err != nil {
-						return fmt.Errorf("failed to get account information: %s", err)
-					}
-					if account.GetSequence() > prevSeq {
-						break
-					}
-					time.Sleep(100 * time.Millisecond)
-				}
-				log.Debug().Msgf("took %s waiting for the account info update", time.Since(started))
-
-				accSeq := account.GetSequence()
-				log.Info().Msgf("account sequence: %d", accSeq)
-				prevSeq = accSeq
-				accNum := account.GetAccountNumber()
 
 				msgs, err := tx.CreateSwapBot(ctx, accAddr, poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
 				if err != nil {
 					return fmt.Errorf("failed to create msg: %s", err)
 				}
 
-				started = time.Now()
+				started := time.Now()
 				for i := 0; i < numTxsPerBlock; i++ {
-					txByte, err := tx.Sign(ctx, seq, accNum, privKey, msgs...)
+					txByte, err := tx.Sign(ctx, accSeq, accNum, privKey, msgs...)
 					if err != nil {
 						return fmt.Errorf("failed to sign and broadcast: %s", err)
 					}
-					seq++
+					accSeq++
 					txBytes = append(txBytes, txByte)
 				}
 				log.Debug().Msgf("took %s signing txs", time.Since(started))
 
 				started = time.Now()
-				numFailedTxs := 0
 				for _, txByte := range txBytes {
 					resp, err := client.GRPC.BroadcastTx(ctx, txByte)
 					if err != nil {
 						return fmt.Errorf("failed to broadcast transaction: %s", err)
 					}
-					if _, ok := broadcastTxHashes[resp.TxResponse.TxHash]; ok {
-						panic("duplicate tx")
-					}
-					broadcastTxHashes[resp.TxResponse.TxHash] = struct{}{}
 					if resp.TxResponse.Code != 0 {
-						numFailedTxs++
-						if resp.TxResponse.Code != 19 {
-							panic(fmt.Sprintf("%#v\n", resp.TxResponse))
-						}
+						panic(fmt.Sprintf("%#v\n", resp.TxResponse))
 					}
 					tr.TxBroadcast(resp.TxResponse.TxHash, nextHeight)
-					//fmt.Print(".")
 				}
-				//fmt.Println()
 				log.Debug().Msgf("took %s broadcasting txs", time.Since(started))
-				if numFailedTxs > 0 {
-					log.Info().Msgf("number of failed txs: %d", numFailedTxs)
-				}
 
 				// Wait for the block to be committed.
-				started = time.Now()
 				for {
 					st, err := client.GetRPCClient().Status(ctx)
 					if err != nil {
@@ -319,23 +266,27 @@ func StressTestCmd() *cobra.Command {
 					}
 					time.Sleep(100 * time.Millisecond)
 				}
-				log.Debug().Msgf("took %s waiting for the next block", time.Since(started))
 
 				r, err := client.GetRPCClient().Block(ctx, &nextHeight)
 				if err != nil {
 					return err
 				}
+				blockTimes[nextHeight] = r.Block.Time
 				log.Info().Msgf("height: %d, block time: %s, number of txs: %d",
 					nextHeight, r.Block.Time.Format(time.RFC3339Nano), len(r.Block.Txs))
 
 				finishedHeights := tr.TxsCommitted(TxHashes(r.Block.Txs), nextHeight)
-				if len(finishedHeights) > 0 {
-					log.Info().Msgf("finished heights: %v", finishedHeights)
+				log.Info().Msgf("finished heights: %v", finishedHeights)
+
+				for _, height := range finishedHeights {
+					blockTime := blockTimes[height]
+					blockDuration := blockTimes[height].Sub(blockTimes[height-1])
+					numMissingTxs := tr.NumMissingTxs(height)
+					avgDelay := AvgDelays(tr.Delays(height))
+
+					log.Info().Msgf("> height: %d, block time: %s, block duration: %s, num missing txs: %d, avg delay: %f",
+						height, blockTime.Format(time.RFC3339Nano), blockDuration, numMissingTxs, avgDelay)
 				}
-
-				log.Info().Msgf("all avg: %f, avg: %f, missing: %d", AvgDelays(tr.AllDelays(nextHeight)), AvgDelays(tr.Delays(nextHeight)), tr.NumMissedTxs(nextHeight))
-
-				time.Sleep(time.Second)
 			}
 
 			return nil

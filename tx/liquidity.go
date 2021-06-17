@@ -126,12 +126,7 @@ func (t *Transaction) CreateSwapBot(ctx context.Context, poolCreator string,
 	for i := 0; i < msgNum; i++ {
 		random := sdktypes.NewDec(int64(rand.Intn(2)))
 		orderPricePercentage := orderPrice.Mul(random.Quo(sdktypes.NewDec(100)))
-
-		if i%2 == 0 {
-			orderPrice = orderPrice.Sub(orderPricePercentage)
-		} else {
-			orderPrice = orderPrice.Sub(orderPricePercentage)
-		}
+		orderPrice = orderPrice.Sub(orderPricePercentage)
 
 		msg, err := MsgSwap(poolCreator, poolId, uint32(1), offerCoin, demandCoinDenom, orderPrice, sdktypes.NewDecWithPrec(3, 3))
 		if err != nil {
