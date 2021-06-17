@@ -288,7 +288,6 @@ func StressTestCmd() *cobra.Command {
 				fmt.Println(strings.Repeat("-", 80))
 
 				nextHeight := startingHeight + i
-				var txBytes [][]byte
 
 				msgs, err := tx.CreateSwapBot(ctx, d.Addr(), poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
 				if err != nil {
@@ -300,17 +299,11 @@ func StressTestCmd() *cobra.Command {
 					accSeq := d.IncAccSeq()
 					txByte, err := tx.Sign(ctx, accSeq, d.AccNum(), d.PrivKey(), msgs...)
 					if err != nil {
-						return fmt.Errorf("failed to sign and broadcast: %s", err)
+						return fmt.Errorf("sign tx: %w", err)
 					}
-					txBytes = append(txBytes, txByte)
-				}
-				log.Debug().Msgf("took %s signing txs", time.Since(started))
-
-				started = time.Now()
-				for _, txByte := range txBytes {
 					resp, err := client.GRPC.BroadcastTx(ctx, txByte)
 					if err != nil {
-						return fmt.Errorf("failed to broadcast transaction: %s", err)
+						return fmt.Errorf("broadcast tx: %w", err)
 					}
 					if resp.TxResponse.Code != 0 {
 						if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x20 {
