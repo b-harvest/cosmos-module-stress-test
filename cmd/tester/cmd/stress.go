@@ -3,117 +3,22 @@ package cmd
 import (
 	"context"
 	"encoding/csv"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	tenderminttypes "github.com/tendermint/tendermint/types"
+	rpcclient "github.com/tendermint/tendermint/rpc/client"
 
 	"github.com/b-harvest/cosmos-module-stress-test/client"
 	"github.com/b-harvest/cosmos-module-stress-test/config"
 	"github.com/b-harvest/cosmos-module-stress-test/tx"
 	"github.com/b-harvest/cosmos-module-stress-test/wallet"
 )
-
-type Tx struct {
-	Hash            string
-	BroadcastHeight int64
-	CommittedHeight int64
-}
-
-type Txs map[string]*Tx
-
-type TxTracker struct {
-	txsByHeight        map[int64]Txs
-	pendingTxsByHeight map[int64]Txs
-	txs                Txs
-}
-
-func NewTxTracker() *TxTracker {
-	return &TxTracker{
-		txsByHeight:        make(map[int64]Txs),
-		pendingTxsByHeight: make(map[int64]Txs),
-		txs:                make(Txs),
-	}
-}
-
-func (tr *TxTracker) TxBroadcast(hash string, height int64) {
-	tx := &Tx{
-		Hash:            hash,
-		BroadcastHeight: height,
-	}
-	if _, ok := tr.txsByHeight[height]; !ok {
-		tr.txsByHeight[height] = make(Txs)
-	}
-	tr.txsByHeight[height][hash] = tx
-	if _, ok := tr.pendingTxsByHeight[height]; !ok {
-		tr.pendingTxsByHeight[height] = make(Txs)
-	}
-	tr.pendingTxsByHeight[height][hash] = tx
-	tr.txs[hash] = tx
-}
-
-func (tr *TxTracker) TxsCommitted(hashes []string, height int64) (finishedHeights []int64) {
-	for _, hash := range hashes {
-		tx, ok := tr.txs[hash]
-		if !ok {
-			continue
-		}
-		tx.CommittedHeight = height
-		delete(tr.pendingTxsByHeight[tx.BroadcastHeight], hash)
-		if len(tr.pendingTxsByHeight[tx.BroadcastHeight]) == 0 {
-			finishedHeights = append(finishedHeights, tx.BroadcastHeight)
-		}
-	}
-	return
-}
-
-func (tr *TxTracker) Delays(height int64) (delays []int64) {
-	for _, tx := range tr.txsByHeight[height] {
-		if tx.CommittedHeight == 0 {
-			panic("delays must be calculated on the finished block")
-		}
-		delay := tx.CommittedHeight - tx.BroadcastHeight
-		delays = append(delays, delay)
-	}
-	return
-}
-
-func (tr *TxTracker) NumMissingTxs(height int64) int {
-	n := 0
-	for _, tx := range tr.txsByHeight[height] {
-		if tx.CommittedHeight != tx.BroadcastHeight {
-			n++
-		}
-	}
-	return n
-}
-
-func TxHashes(txs tenderminttypes.Txs) []string {
-	var hashes []string
-	for _, tx := range txs {
-		hashes = append(hashes, strings.ToUpper(hex.EncodeToString(tx.Hash())))
-	}
-	return hashes
-}
-
-func AvgDelays(delays []int64) float64 {
-	if len(delays) == 0 {
-		return 0
-	}
-	sum := 0.0
-	for _, delay := range delays {
-		sum += float64(delay)
-	}
-	return sum / float64(len(delays))
-}
 
 type AccountDispenser struct {
 	c         *client.Client
@@ -175,12 +80,38 @@ func (d *AccountDispenser) IncAccSeq() uint64 {
 	return r
 }
 
+type Scenario struct {
+	Rounds         int
+	NumTxsPerBlock int
+}
+
+const (
+	ScenarioInterval = 10 * time.Minute
+	//ScenarioInterval = 3 * time.Second
+)
+
+var (
+	scenarios = []Scenario{
+		{100, 10},
+		{100, 50},
+		{100, 100},
+		{100, 200},
+		{100, 300},
+		{100, 400},
+		{100, 500},
+	}
+	//scenarios = []Scenario{
+	//	{5, 10},
+	//	{5, 50},
+	//	{5, 100},
+	//	{5, 200},
+	//	{5, 300},
+	//	{5, 400},
+	//	{5, 500},
+	//}
+)
+
 func StressTestCmd() *cobra.Command {
-	var (
-		heightSpan     int64
-		numTxsPerBlock int
-		numMsgsPerTx   int
-	)
 	cmd := &cobra.Command{
 		Use:   "stress-test [pool-id] [offer-coin]",
 		Short: "run stress test",
@@ -237,142 +168,126 @@ func StressTestCmd() *cobra.Command {
 				return err
 			}
 
-			d := NewAccountDispenser(client, cfg.Custom.Mnemonics)
-
-			st, err := client.RPC.Status(ctx)
-			if err != nil {
-				return fmt.Errorf("get status: %w", err)
-			}
-			currentHeight := st.SyncInfo.LatestBlockHeight
-			log.Info().Msgf("current height: %d, waiting for the next block", currentHeight)
-
-			blockTimes := make(map[int64]time.Time)
-
-			var startingHeight int64
-			for {
-				st, err := client.RPC.Status(ctx)
-				if err != nil {
-					return fmt.Errorf("get status: %w", err)
-				}
-				blockTimes[st.SyncInfo.LatestBlockHeight] = st.SyncInfo.LatestBlockTime
-				if st.SyncInfo.LatestBlockHeight > currentHeight {
-					startingHeight = st.SyncInfo.LatestBlockHeight + 1
-					break
-				}
-				time.Sleep(100 * time.Millisecond)
-			}
-			log.Info().Msgf("starting at %d", startingHeight)
-
-			if err := d.Next(); err != nil {
-				return fmt.Errorf("next account: %w", err)
-			}
-			log.Info().Msgf("starting sequence: %d", d.AccSeq())
-
 			gasLimit := uint64(cfg.Custom.GasLimit)
 			fees := sdk.NewCoins(sdk.NewCoin(cfg.Custom.FeeDenom, sdk.NewInt(cfg.Custom.FeeAmount)))
 			memo := cfg.Custom.Memo
 			tx := tx.NewTransaction(client, chainID, gasLimit, fees, memo)
 
-			tr := NewTxTracker()
-
-			f, err := os.OpenFile("result.csv", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+			f, err := os.OpenFile("result.csv", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 			if err != nil {
 				return fmt.Errorf("open file: %w", err)
 			}
 			defer f.Close()
-
 			w := csv.NewWriter(f)
-			defer w.Flush()
-
-			for i := int64(0); i < heightSpan; i++ {
-				fmt.Println(strings.Repeat("-", 80))
-
-				nextHeight := startingHeight + i
-
-				started := time.Now()
-				for i := 0; i < numTxsPerBlock; i++ {
-					msgs, err := tx.CreateSwapBot(ctx, d.Addr(), poolID, offerCoin, demandCoinDenom, numMsgsPerTx)
-					if err != nil {
-						return fmt.Errorf("failed to create msg: %s", err)
-					}
-					accSeq := d.IncAccSeq()
-					txByte, err := tx.Sign(ctx, accSeq, d.AccNum(), d.PrivKey(), msgs...)
-					if err != nil {
-						return fmt.Errorf("sign tx: %w", err)
-					}
-					resp, err := client.GRPC.BroadcastTx(ctx, txByte)
-					if err != nil {
-						return fmt.Errorf("broadcast tx: %w", err)
-					}
-					if resp.TxResponse.Code != 0 {
-						if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x14 || resp.TxResponse.Code == 0x20 {
-							log.Warn().Msgf("received %#v, using the next account", resp.TxResponse)
-							if err := d.Next(); err != nil {
-								return fmt.Errorf("next account: %w", err)
-							}
-							time.Sleep(time.Second)
-							i--
-							log.Warn().Msgf("next account address: %s", d.Addr())
-						} else {
-							panic(fmt.Sprintf("%#v\n", resp.TxResponse))
-						}
-					} else {
-						tr.TxBroadcast(resp.TxResponse.TxHash, nextHeight)
-					}
+			fi, err := f.Stat()
+			if err != nil {
+				return fmt.Errorf("stat file: %w", err)
+			}
+			if fi.Size() == 0 {
+				if err := w.Write([]string{
+					"height",
+					"num_broadcast_txs",
+					"num_committed_txs",
+				}); err != nil {
+					return fmt.Errorf("emit header: %w", err)
 				}
-				log.Debug().Msgf("took %s broadcasting txs", time.Since(started))
+				w.Flush()
+				if err := w.Error(); err != nil {
+					return fmt.Errorf("write header: %w", err)
+				}
+			}
 
-				// Wait for the block to be committed.
-				for {
-					st, err := client.GetRPCClient().Status(ctx)
+			d := NewAccountDispenser(client, cfg.Custom.Mnemonics)
+			if err := d.Next(); err != nil {
+				return fmt.Errorf("get next account: %w", err)
+			}
+
+			for no, scenario := range scenarios {
+				st, err := client.RPC.Status(ctx)
+				if err != nil {
+					return fmt.Errorf("get status: %w", err)
+				}
+				startingHeight := st.SyncInfo.LatestBlockHeight + 2
+				log.Info().Msgf("current block height is %d, waiting for the next block to be committed", st.SyncInfo.LatestBlockHeight)
+
+				if err := rpcclient.WaitForHeight(client.RPC, startingHeight-1, nil); err != nil {
+					return fmt.Errorf("wait for height: %w", err)
+				}
+				log.Info().Msgf("starting simulation #%d, rounds = %d, num txs per block = %d", no+1, scenario.Rounds, scenario.NumTxsPerBlock)
+
+				for i := 0; i < scenario.Rounds; i++ {
+					targetHeight := startingHeight + int64(i)
+					st, err := client.RPC.Status(ctx)
 					if err != nil {
 						return fmt.Errorf("get status: %w", err)
 					}
-					if st.SyncInfo.LatestBlockHeight == nextHeight {
-						break
-					} else if st.SyncInfo.LatestBlockHeight > nextHeight {
-						return fmt.Errorf("block has past")
+					if st.SyncInfo.LatestBlockHeight != targetHeight-1 {
+						return fmt.Errorf("mismatching block height: got %d, expected %d", st.SyncInfo.LatestBlockHeight, targetHeight-1)
 					}
-					time.Sleep(100 * time.Millisecond)
-				}
 
-				r, err := client.GetRPCClient().Block(ctx, &nextHeight)
-				if err != nil {
-					return err
-				}
-				blockTimes[nextHeight] = r.Block.Time
-				log.Info().Msgf("height: %d, block time: %s, number of txs: %d",
-					nextHeight, r.Block.Time.Format(time.RFC3339Nano), len(r.Block.Txs))
+					started := time.Now()
+					for sent := 0; sent < scenario.NumTxsPerBlock; {
+						msgs, err := tx.CreateSwapBot(ctx, d.Addr(), poolID, offerCoin, demandCoinDenom, 1)
+						if err != nil {
+							return fmt.Errorf("generate msgs: %s", err)
+						}
 
-				finishedHeights := tr.TxsCommitted(TxHashes(r.Block.Txs), nextHeight)
-				log.Info().Msgf("finished heights: %v", finishedHeights)
+						for sent < scenario.NumTxsPerBlock {
+							accSeq := d.IncAccSeq()
+							txByte, err := tx.Sign(ctx, accSeq, d.AccNum(), d.PrivKey(), msgs...)
+							if err != nil {
+								return fmt.Errorf("sign tx: %w", err)
+							}
+							resp, err := client.GRPC.BroadcastTx(ctx, txByte)
+							if err != nil {
+								return fmt.Errorf("broadcast tx: %w", err)
+							}
+							if resp.TxResponse.Code != 0 {
+								if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x14 || resp.TxResponse.Code == 0x20 {
+									if err := d.Next(); err != nil {
+										return fmt.Errorf("get next account: %w", err)
+									}
+									log.Warn().Str("addr", d.Addr()).Uint64("seq", d.AccSeq()).Msgf("received %#v, using next account", resp.TxResponse)
+									time.Sleep(500 * time.Millisecond)
+									break
+								} else {
+									panic(fmt.Sprintf("%#v\n", resp.TxResponse))
+								}
+							}
+							sent++
+						}
+					}
+					log.Debug().Msgf("took %s broadcasting txs", time.Since(started))
 
-				for _, height := range finishedHeights {
-					blockTime := blockTimes[height]
-					blockDuration := blockTimes[height].Sub(blockTimes[height-1])
-					numMissingTxs := tr.NumMissingTxs(height)
-					avgDelay := AvgDelays(tr.Delays(height))
+					if err := rpcclient.WaitForHeight(client.RPC, targetHeight, nil); err != nil {
+						return fmt.Errorf("wait for height: %w", err)
+					}
 
-					log.Info().Msgf("> height: %d, block time: %s, block duration: %s, num missing txs: %d, avg delay: %f",
-						height, blockTime.Format(time.RFC3339Nano), blockDuration, numMissingTxs, avgDelay)
+					r, err := client.RPC.Block(ctx, &targetHeight)
+					if err != nil {
+						return err
+					}
+					log.Info().Int64("height", targetHeight).Int("broadcast-txs", scenario.NumTxsPerBlock).Int("committed-txs", len(r.Block.Txs)).Msg("block committed")
+
 					if err := w.Write([]string{
-						strconv.FormatInt(height, 10),
-						blockTime.Format(time.RFC3339Nano),
-						blockDuration.String(),
-						strconv.Itoa(numMissingTxs),
-						strconv.FormatFloat(avgDelay, 'f', -1, 64),
+						strconv.FormatInt(targetHeight, 10),
+						strconv.Itoa(scenario.NumTxsPerBlock),
+						strconv.Itoa(len(r.Block.Txs)),
 					}); err != nil {
-						return fmt.Errorf("write record")
+						return fmt.Errorf("emit row: %w", err)
 					}
 					w.Flush()
+					if err := w.Error(); err != nil {
+						return fmt.Errorf("write row: %w", err)
+					}
 				}
+
+				log.Debug().Msgf("cooling down for %s", ScenarioInterval)
+				time.Sleep(ScenarioInterval)
 			}
 
 			return nil
 		},
 	}
-	cmd.Flags().Int64VarP(&heightSpan, "height-span", "s", 10, "how many blocks will the test run for")
-	cmd.Flags().IntVarP(&numTxsPerBlock, "num-txs", "t", 1, "number of transactions per block")
-	cmd.Flags().IntVarP(&numMsgsPerTx, "num-msgs", "m", 1, "number of messages per transaction")
 	return cmd
 }
