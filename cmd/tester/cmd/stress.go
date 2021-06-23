@@ -192,6 +192,7 @@ func StressTestCmd() *cobra.Command {
 					"height",
 					"num_broadcast_txs",
 					"num_committed_txs",
+					"planned_num_broadcast_txs",
 				}); err != nil {
 					return fmt.Errorf("emit header: %w", err)
 				}
@@ -219,8 +220,9 @@ func StressTestCmd() *cobra.Command {
 				}
 				log.Info().Msgf("starting simulation #%d, rounds = %d, num txs per block = %d", no+1, scenario.Rounds, scenario.NumTxsPerBlock)
 
+				targetHeight := startingHeight
+
 				for i := 0; i < scenario.Rounds; i++ {
-					targetHeight := startingHeight + int64(i)
 					st, err := client.RPC.Status(ctx)
 					if err != nil {
 						return fmt.Errorf("get status: %w", err)
@@ -231,7 +233,9 @@ func StressTestCmd() *cobra.Command {
 					}
 
 					started := time.Now()
-					for sent := 0; sent < scenario.NumTxsPerBlock; {
+					sent := 0
+				loop:
+					for sent < scenario.NumTxsPerBlock {
 						msgs, err := tx.CreateSwapBot(ctx, d.Addr(), poolID, offerCoin, demandCoinDenom, 1)
 						if err != nil {
 							return fmt.Errorf("generate msgs: %s", err)
@@ -251,7 +255,7 @@ func StressTestCmd() *cobra.Command {
 								if resp.TxResponse.Code == 0x14 {
 									log.Warn().Msg("mempool is full, stopping")
 									d.DecAccSeq()
-									break
+									break loop
 								}
 								if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x20 {
 									if err := d.Next(); err != nil {
@@ -277,12 +281,13 @@ func StressTestCmd() *cobra.Command {
 					if err != nil {
 						return err
 					}
-					log.Info().Int64("height", targetHeight).Int("broadcast-txs", scenario.NumTxsPerBlock).Int("committed-txs", len(r.Block.Txs)).Msg("block committed")
+					log.Info().Int64("height", targetHeight).Int("broadcast-txs", sent).Int("committed-txs", len(r.Block.Txs)).Msg("block committed")
 
 					if err := w.Write([]string{
 						strconv.FormatInt(targetHeight, 10),
-						strconv.Itoa(scenario.NumTxsPerBlock),
+						strconv.Itoa(sent),
 						strconv.Itoa(len(r.Block.Txs)),
+						strconv.Itoa(scenario.NumTxsPerBlock),
 					}); err != nil {
 						return fmt.Errorf("emit row: %w", err)
 					}
@@ -290,6 +295,8 @@ func StressTestCmd() *cobra.Command {
 					if err := w.Error(); err != nil {
 						return fmt.Errorf("write row: %w", err)
 					}
+
+					targetHeight++
 				}
 
 				log.Debug().Msgf("cooling down for %s", ScenarioInterval)
