@@ -80,25 +80,29 @@ func (d *AccountDispenser) IncAccSeq() uint64 {
 	return r
 }
 
+func (d *AccountDispenser) DecAccSeq() {
+	d.accSeq--
+}
+
 type Scenario struct {
 	Rounds         int
 	NumTxsPerBlock int
 }
 
 const (
-	ScenarioInterval = 10 * time.Minute
+	ScenarioInterval = 5 * time.Minute
 	//ScenarioInterval = 3 * time.Second
 )
 
 var (
 	scenarios = []Scenario{
-		{100, 10},
-		{100, 50},
-		{100, 100},
-		{100, 200},
-		{100, 300},
-		{100, 400},
-		{100, 500},
+		{70, 10},
+		{70, 50},
+		{70, 100},
+		{70, 200},
+		{70, 300},
+		{70, 400},
+		{70, 500},
 	}
 	//scenarios = []Scenario{
 	//	{5, 10},
@@ -222,7 +226,8 @@ func StressTestCmd() *cobra.Command {
 						return fmt.Errorf("get status: %w", err)
 					}
 					if st.SyncInfo.LatestBlockHeight != targetHeight-1 {
-						return fmt.Errorf("mismatching block height: got %d, expected %d", st.SyncInfo.LatestBlockHeight, targetHeight-1)
+						log.Warn().Int64("expected", targetHeight-1).Int64("got", st.SyncInfo.LatestBlockHeight).Msg("mismatching block height")
+						targetHeight = st.SyncInfo.LatestBlockHeight + 1
 					}
 
 					started := time.Now()
@@ -243,7 +248,12 @@ func StressTestCmd() *cobra.Command {
 								return fmt.Errorf("broadcast tx: %w", err)
 							}
 							if resp.TxResponse.Code != 0 {
-								if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x14 || resp.TxResponse.Code == 0x20 {
+								if resp.TxResponse.Code == 0x14 {
+									log.Warn().Msg("mempool is full, stopping")
+									d.DecAccSeq()
+									break
+								}
+								if resp.TxResponse.Code == 0x13 || resp.TxResponse.Code == 0x20 {
 									if err := d.Next(); err != nil {
 										return fmt.Errorf("get next account: %w", err)
 									}
