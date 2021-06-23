@@ -183,6 +183,8 @@ func StressTestCmd() *cobra.Command {
 			if fi.Size() == 0 {
 				if err := w.Write([]string{
 					"height",
+					"block_time",
+					"block_duration",
 					"num_broadcast_txs",
 					"num_committed_txs",
 					"planned_num_broadcast_txs",
@@ -199,6 +201,8 @@ func StressTestCmd() *cobra.Command {
 			if err := d.Next(); err != nil {
 				return fmt.Errorf("get next account: %w", err)
 			}
+
+			blockTimes := make(map[int64]time.Time)
 
 			for no, scenario := range scenarios {
 				st, err := client.RPC.Status(ctx)
@@ -274,10 +278,27 @@ func StressTestCmd() *cobra.Command {
 					if err != nil {
 						return err
 					}
-					log.Info().Int64("height", targetHeight).Int("broadcast-txs", sent).Int("committed-txs", len(r.Block.Txs)).Msg("block committed")
+					var blockDuration time.Duration
+					bt, ok := blockTimes[targetHeight-1]
+					if !ok {
+						log.Warn().Msg("past block time not found")
+					} else {
+						blockDuration = r.Block.Time.Sub(bt)
+						delete(blockTimes, targetHeight-1)
+					}
+					blockTimes[targetHeight] = r.Block.Time
+					log.Info().
+						Int64("height", targetHeight).
+						Str("block-time", r.Block.Time.Format(time.RFC3339Nano)).
+						Str("block-duration", blockDuration.String()).
+						Int("broadcast-txs", sent).
+						Int("committed-txs", len(r.Block.Txs)).
+						Msg("block committed")
 
 					if err := w.Write([]string{
 						strconv.FormatInt(targetHeight, 10),
+						r.Block.Time.Format(time.RFC3339Nano),
+						blockDuration.String(),
 						strconv.Itoa(sent),
 						strconv.Itoa(len(r.Block.Txs)),
 						strconv.Itoa(scenario.NumTxsPerBlock),
@@ -305,7 +326,7 @@ func StressTestCmd() *cobra.Command {
 					time.Sleep(5 * time.Second)
 				}
 				log.Debug().Str("elapsed", time.Since(started).String()).Msg("done cooling down")
-				time.Sleep(5 * time.Minute)
+				time.Sleep(time.Minute)
 			}
 
 			return nil
