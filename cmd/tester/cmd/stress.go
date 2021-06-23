@@ -89,11 +89,6 @@ type Scenario struct {
 	NumTxsPerBlock int
 }
 
-const (
-	ScenarioInterval = 5 * time.Minute
-	//ScenarioInterval = 3 * time.Second
-)
-
 var (
 	scenarios = []Scenario{
 		{70, 10},
@@ -299,8 +294,20 @@ func StressTestCmd() *cobra.Command {
 					targetHeight++
 				}
 
-				log.Debug().Msgf("cooling down for %s", ScenarioInterval)
-				time.Sleep(ScenarioInterval)
+				started := time.Now()
+				log.Debug().Msg("cooling down")
+				for {
+					st, err := client.RPC.NumUnconfirmedTxs(ctx)
+					if err != nil {
+						return fmt.Errorf("get status: %w", err)
+					}
+					if st.Total == 0 {
+						break
+					}
+					time.Sleep(5 * time.Second)
+				}
+				log.Debug().Str("elapsed", time.Since(started).String()).Msg("done cooling down")
+				time.Sleep(5 * time.Minute)
 			}
 
 			return nil
