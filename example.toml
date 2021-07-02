@@ -8,8 +8,7 @@ address = "localhost:9090"
 address = "http://localhost:1317"
 
 [custom]
-mnemonic = "guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"
-
+mnemonics = ["guard cream sadness conduct invite crumble clock pudding hole grit liar hotel maid produce squeeze return argue turtle know drive eight casino maze host"]
 gas_limit = 100000000
 fee_denom = "stake"
 fee_amount = 0
