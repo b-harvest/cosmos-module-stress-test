@@ -55,13 +55,25 @@ func IBCtraceCmd() *cobra.Command {
 
 			for _, i := range Chains {
 				fmt.Print(i.ChainName)
+				fmt.Println("")
 				for _, j := range i.IBCInfo {
+					fmt.Print("{")
+					fmt.Print(j.ClientChainName)
+					fmt.Print(":")
+					fmt.Print(j.ClientId)
 					for _, q := range j.ConnectIDs {
+						fmt.Print("[")
+						fmt.Print(q.ConnectId)
+						fmt.Print("(")
 						for _, r := range q.ChannsIDs {
-							fmt.Print("/")
 							fmt.Print(r)
+							fmt.Print(",")
 						}
+						fmt.Print(")")
+						fmt.Print("],")
 					}
+					fmt.Print("},")
+					fmt.Println("")
 				}
 				fmt.Println("")
 			}
