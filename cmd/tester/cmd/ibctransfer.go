@@ -53,9 +53,6 @@ msg-num: how many transaction messages to be included in a transaction
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
 
-			if err != nil {
-				return err
-			}
 			client, err := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
 			if err != nil {
 				return fmt.Errorf("failed to connect clients: %s", err)

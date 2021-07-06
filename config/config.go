@@ -15,10 +15,11 @@ var (
 
 // Config defines all necessary configuration parameters.
 type Config struct {
-	RPC    *RPCConfig    `toml:"rpc"`
-	GRPC   *GRPCConfig   `toml:"grpc"`
-	LCD    *LCDConfig    `toml:"lcd"`
-	Custom *CustomConfig `toml:"custom"`
+	RPC       *RPCConfig    `toml:"rpc"`
+	GRPC      *GRPCConfig   `toml:"grpc"`
+	LCD       *LCDConfig    `toml:"lcd"`
+	Custom    *CustomConfig `toml:"custom"`
+	IBCconfig *IBCconfig    `toml:"ibcconfig"`
 }
 
 // RPCConfig contains the configuration of the RPC endpoint.
@@ -43,6 +44,16 @@ type CustomConfig struct {
 	FeeDenom  string   `toml:"fee_denom"`
 	FeeAmount int64    `toml:"fee_amount"`
 	Memo      string   `toml:"memo"`
+}
+type IBCchain struct {
+	Chain   string `toml:"chain"`
+	Grpc    string `toml:"grpc"`
+	Rpc     string `toml:"rpc"`
+	Address string `toml:"address"`
+}
+
+type IBCconfig struct {
+	Chains []IBCchain `toml:"chains"`
 }
 
 // NewConfig builds a new Config instance.
