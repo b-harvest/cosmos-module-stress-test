@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/b-harvest/cosmos-module-stress-test/client"
@@ -87,38 +88,51 @@ msg-num: how many transaction messages to be included in a transaction
 			if DstchainsSize != MnemonicsSize {
 				return fmt.Errorf("the number of ibcconfig and mnemics is different")
 			}
+			var wg sync.WaitGroup
 			for _, chainname := range srcchains {
-				var mainchain config.IBCchain
-				var subchains []config.IBCchain
+				wg.Add(1)
+				go func(chainname string) error {
+					defer wg.Done()
+					var mainchain config.IBCchain
+					var subchains []config.IBCchain
 
-				for _, ibcconfigchain := range cfg.IBCconfig.Chains {
-					if ibcconfigchain.ChainId == chainname {
-						mainchain = ibcconfigchain
-						break
-					}
-				}
-
-				for _, chainname := range dstchains {
 					for _, ibcconfigchain := range cfg.IBCconfig.Chains {
 						if ibcconfigchain.ChainId == chainname {
-							subchains = append(subchains, ibcconfigchain)
+							mainchain = ibcconfigchain
 							break
 						}
 					}
-				}
 
-				mainchainibcinfo, err := query.AllChainsTrace(mainchain.Grpc)
-				if err != nil {
-					return err
-				}
-				for index, dstchaininfo := range subchains {
-					err := DstChainsend(cmd, index, dstchaininfo, mainchainibcinfo, mainchain, cfg, args)
+					for _, chainname := range dstchains {
+						for _, ibcconfigchain := range cfg.IBCconfig.Chains {
+							if ibcconfigchain.ChainId == chainname {
+								subchains = append(subchains, ibcconfigchain)
+								break
+							}
+						}
+					}
+
+					mainchainibcinfo, err := query.AllChainsTrace(mainchain.Grpc)
 					if err != nil {
 						return err
 					}
-				} //src chain-> dst chains send for loop
-			} //src chains for loop
 
+					for index, dstchaininfo := range subchains {
+						wg.Add(1)
+						go func(index int, dstchaininfo config.IBCchain) error {
+							defer wg.Done()
+							err := DstChainsend(cmd, index, dstchaininfo, mainchainibcinfo, mainchain, cfg, args)
+							if err != nil {
+								return err
+							}
+							return err
+						}(index, dstchaininfo)
+					} //src chain-> dst chains send for loop
+
+					return err
+				}(chainname)
+			} //src chains for loop
+			wg.Wait()
 			return nil
 		},
 	}
@@ -227,7 +241,6 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 	loop:
 		for sent < txNum {
 			msgs, err := tx.CreateTransferBot(cmd, ibcclientCtx, srcPort, srcChannel, coin, accAddr, receiver, msgNum)
-			fmt.Println(msgs)
 			if err != nil {
 				return fmt.Errorf("failed to create msg: %s", err)
 			}
@@ -237,7 +250,7 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 					return fmt.Errorf("failed to sign and broadcast: %s", err)
 				}
 				resp, err := client.GRPC.BroadcastTx(ctx, txByte)
-				log.Info().Msgf("took %s broadcasting txs", resp)
+				//log.Info().Msgf("took %s broadcasting txs", resp)
 				if err != nil {
 					return fmt.Errorf("broadcast tx: %w", err)
 				}

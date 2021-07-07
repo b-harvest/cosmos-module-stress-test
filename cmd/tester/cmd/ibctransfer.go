@@ -37,7 +37,7 @@ func IBCtransferCmd() *cobra.Command {
 		Long: `Transfer a fungible token through IBC.
 
 Example: $tester t transfer channel-0 cosmos1pacc0fr45hggcn8jrfhgnqf8vgyqna7r5sftql 10uatom 10 1 1
-
+!!!only cosmos account used
 blocks: how many blocks to keep the test going?
 tx-num: how many transactions to be included in a block
 msg-num: how many transaction messages to be included in a transaction
