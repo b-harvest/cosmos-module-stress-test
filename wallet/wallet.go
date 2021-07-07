@@ -29,3 +29,24 @@ func RecoverAccountFromMnemonic(mnemonic string, password string) (string, *secp
 
 	return accAddr, privKey, nil
 }
+
+// RecoverAccountFromMnemonic recovers private key from mnemonic and return account address after bech32 encoding.
+func IBCRecoverAccountFromMnemonic(mnemonic string, password string, accounthd string, accountaddrprefix string) (string, *secp256k1.PrivKey, error) {
+	seed := bip39.NewSeed(mnemonic, password)
+	masterKey, ch := hd.ComputeMastersFromSeed(seed)
+	priv, err := hd.DerivePrivateKeyForPath(masterKey, ch, accounthd) // "44'/118'/0'/0/0"
+	if err != nil {
+		return "", &secp256k1.PrivKey{}, fmt.Errorf("failed to derive private key for path: %s", err)
+	}
+
+	privKey := &secp256k1.PrivKey{Key: priv}
+	pubKey := privKey.PubKey()
+
+	accAddr, err := bech32.ConvertAndEncode(accountaddrprefix, pubKey.Address())
+
+	if err != nil {
+		return "", &secp256k1.PrivKey{}, fmt.Errorf("failed to convert and encode address: %s", err)
+	}
+
+	return accAddr, privKey, nil
+}

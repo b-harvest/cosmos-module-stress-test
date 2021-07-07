@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/b-harvest/cosmos-module-stress-test/config"
 	"github.com/b-harvest/cosmos-module-stress-test/query"
@@ -28,37 +27,29 @@ func IBCtraceCmd() *cobra.Command {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
 			type Chain struct {
-				IBCInfo   []query.ClientIds
-				ChainName string
+				IBCInfo []query.ClientIds
+				ChainId string
 			}
 
-			ConfigSize := len(cfg.IBCconfig.Chains)
-
-			var wait sync.WaitGroup
-			wait.Add(ConfigSize)
 			var Chains []Chain
-			go func() error {
-				for _, i := range cfg.IBCconfig.Chains {
-					defer wait.Done()
-					var chain Chain
-					q, err := query.AllChainsTrace(i.Grpc)
-					if err != nil {
-						return err
-					}
-					chain.ChainName = i.Chain
-					chain.IBCInfo = q
-					Chains = append(Chains, chain)
+
+			for _, i := range cfg.IBCconfig.Chains {
+				var chain Chain
+				q, err := query.AllChainsTrace(i.Grpc)
+				if err != nil {
+					return err
 				}
-				return nil
-			}()
-			wait.Wait()
+				chain.ChainId = i.ChainId
+				chain.IBCInfo = q
+				Chains = append(Chains, chain)
+			}
 
 			for _, i := range Chains {
-				fmt.Print(i.ChainName)
+				fmt.Print(i.ChainId)
 				fmt.Println("")
 				for _, j := range i.IBCInfo {
 					fmt.Print("{")
-					fmt.Print(j.ClientChainName)
+					fmt.Print(j.ClientChainId)
 					fmt.Print(":")
 					fmt.Print(j.ClientId)
 					for _, q := range j.ConnectIDs {

@@ -16,9 +16,9 @@ type ConnectIds struct {
 }
 
 type ClientIds struct {
-	ClientId        string
-	ClientChainName string
-	ConnectIDs      []ConnectIds
+	ClientId      string
+	ClientChainId string
+	ConnectIDs    []ConnectIds
 }
 
 func AllChainsTrace(GrpcAddress string) ([]ClientIds, error) {
@@ -50,7 +50,7 @@ func AllChainsTrace(GrpcAddress string) ([]ClientIds, error) {
 			return nil, err
 		}
 		Client.ClientId = State.ClientId
-		Client.ClientChainName = v.TypeUrl
+		Client.ClientChainId = v.TypeUrl
 		queryClient := ibcconntypes.NewQueryClient(grpcConn)
 		connres, err := queryClient.ClientConnections(
 			context.Background(),

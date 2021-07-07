@@ -46,10 +46,13 @@ type CustomConfig struct {
 	Memo      string   `toml:"memo"`
 }
 type IBCchain struct {
-	Chain   string `toml:"chain"`
-	Grpc    string `toml:"grpc"`
-	Rpc     string `toml:"rpc"`
-	Address string `toml:"address"`
+	ChainId           string `toml:"chainid"`
+	Grpc              string `toml:"grpc"`
+	Rpc               string `toml:"rpc"`
+	DstAddress        string `toml:"dstaccount"`
+	TokenDenom        string `toml:"tokendenom"`
+	AccountHD         string `toml:"accounthd"`
+	AccountaddrPrefix string `toml:"accountaddrprefix"`
 }
 
 type IBCconfig struct {

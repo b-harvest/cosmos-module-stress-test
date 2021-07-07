@@ -3,6 +3,7 @@ package tx
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/b-harvest/cosmos-module-stress-test/client"
 	"github.com/spf13/cobra"
@@ -47,7 +48,8 @@ func IbcNewtransaction(client *client.Client, chainID string, gasLimit uint64, f
 
 // MsgCreatePool creates create pool message and returns MsgCreatePool transaction message.
 func MsgTransfer(cmd *cobra.Command, ctx sdkclient.Context, srcPort string, srcChannel string, coin sdktypes.Coin, sender string, receiver string) (sdktypes.Msg, error) {
-	ibcsender, err := sdktypes.AccAddressFromBech32(sender)
+	prefix := strings.Split(sender, "1")
+	ibcsender, err := sdktypes.GetFromBech32(sender, prefix[0])
 	if err != nil {
 		return &ibctypes.MsgTransfer{}, err
 	}
@@ -88,11 +90,10 @@ func MsgTransfer(cmd *cobra.Command, ctx sdkclient.Context, srcPort string, srcC
 		}
 	}
 	msg := ibctypes.NewMsgTransfer(srcPort, srcChannel, coin, ibcsender, receiver, timeoutHeight, timeoutTimestamp)
-
 	if err := msg.ValidateBasic(); err != nil {
 		return &ibctypes.MsgTransfer{}, err
 	}
-
+	msg.Sender = sender
 	return msg, nil
 }
 
