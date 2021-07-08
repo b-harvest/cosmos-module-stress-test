@@ -85,7 +85,7 @@ msg-num: how many transaction messages to be included in a transaction
 			}
 			DstchainsSize := len(dstchains)
 			MnemonicsSize := len(cfg.Custom.Mnemonics)
-			if DstchainsSize != MnemonicsSize {
+			if DstchainsSize > MnemonicsSize {
 				return fmt.Errorf("the number of ibcconfig and mnemics is different")
 			}
 			var wg sync.WaitGroup
@@ -105,6 +105,9 @@ msg-num: how many transaction messages to be included in a transaction
 
 					for _, chainname := range dstchains {
 						for _, ibcconfigchain := range cfg.IBCconfig.Chains {
+							if chainname == mainchain.ChainId {
+								break
+							}
 							if ibcconfigchain.ChainId == chainname {
 								subchains = append(subchains, ibcconfigchain)
 								break
@@ -144,7 +147,6 @@ msg-num: how many transaction messages to be included in a transaction
 }
 
 func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCchain, mainchainibcinfo []query.ClientIds, mainchain config.IBCchain, cfg *config.Config, args []string) error {
-
 	client, err := client.NewClient(mainchain.Rpc, mainchain.Grpc)
 	if err != nil {
 		return fmt.Errorf("failed to connect clients: %s", err)
@@ -218,12 +220,12 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 		return fmt.Errorf("get status: %w", err)
 	}
 	startingHeight := st.SyncInfo.LatestBlockHeight + 2
-	log.Info().Msgf("current block height is %d, waiting for the next block to be committed", st.SyncInfo.LatestBlockHeight)
+	log.Info().Msgf("current block height is %d, waiting for the next block to be committed <%s>", st.SyncInfo.LatestBlockHeight, mainchain.ChainId)
 
 	if err := rpcclient.WaitForHeight(client.RPC, startingHeight-1, nil); err != nil {
 		return fmt.Errorf("wait for height: %w", err)
 	}
-	log.Info().Msgf("starting simulation #%d, blocks = %d, num txs per block = %d", blocks+1, blocks, txNum)
+	log.Info().Msgf("starting simulation #%d, blocks = %d, num txs per block = %d <%s>", blocks+1, blocks, txNum, mainchain.ChainId)
 	targetHeight := startingHeight
 
 	for i := 0; i < blocks; i++ {
@@ -285,6 +287,8 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 		blockTimes[targetHeight] = r.Block.Time
 		log.Info().
 			Int64("height", targetHeight).
+			Str("srcchain", mainchain.ChainId).
+			Str("dstchain", dstchaininfo.ChainId).
 			Str("block-time", r.Block.Time.Format(time.RFC3339Nano)).
 			Str("block-duration", blockDuration.String()).
 			Int("broadcast-txs", sent).
