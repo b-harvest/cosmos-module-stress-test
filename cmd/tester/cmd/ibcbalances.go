@@ -35,7 +35,7 @@ func IBCBalances() *cobra.Command {
 					return err
 				}
 				defer client.Stop() // nolint: errcheck
-
+				defer client.GRPC.Close()
 				grpcclient := client.GRPC
 				coins, err := grpcclient.GetAllBalances(ctx, IBCchain.DstAddress)
 				if err != nil {

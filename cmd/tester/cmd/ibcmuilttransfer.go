@@ -44,6 +44,8 @@ tx-num: how many transactions to be included in a block
 msg-num: how many transaction messages to be included in a transaction
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 			err := SetLogger(logLevel)
 			if err != nil {
 				return err
@@ -88,54 +90,15 @@ msg-num: how many transaction messages to be included in a transaction
 			if DstchainsSize > MnemonicsSize {
 				return fmt.Errorf("the number of ibcconfig and mnemics is different")
 			}
-			var wg sync.WaitGroup
+			var wait sync.WaitGroup
 			for _, chainname := range srcchains {
-				wg.Add(1)
-				go func(chainname string) error {
-					defer wg.Done()
-					var mainchain config.IBCchain
-					var subchains []config.IBCchain
-
-					for _, ibcconfigchain := range cfg.IBCconfig.Chains {
-						if ibcconfigchain.ChainId == chainname {
-							mainchain = ibcconfigchain
-							break
-						}
-					}
-
-					for _, chainname := range dstchains {
-						for _, ibcconfigchain := range cfg.IBCconfig.Chains {
-							if chainname == mainchain.ChainId {
-								break
-							}
-							if ibcconfigchain.ChainId == chainname {
-								subchains = append(subchains, ibcconfigchain)
-								break
-							}
-						}
-					}
-
-					mainchainibcinfo, err := query.AllChainsTrace(mainchain.Grpc)
-					if err != nil {
-						return err
-					}
-
-					for index, dstchaininfo := range subchains {
-						wg.Add(1)
-						go func(index int, dstchaininfo config.IBCchain) error {
-							defer wg.Done()
-							err := DstChainsend(cmd, index, dstchaininfo, mainchainibcinfo, mainchain, cfg, args)
-							if err != nil {
-								return err
-							}
-							return err
-						}(index, dstchaininfo)
-					} //src chain-> dst chains send for loop
-
-					return err
+				wait.Add(1)
+				go func(chainname string) {
+					defer wait.Done()
+					SrcChainsemd(ctx, cmd, cfg, dstchains, chainname, args)
 				}(chainname)
-			} //src chains for loop
-			wg.Wait()
+			}
+			wait.Wait()
 			return nil
 		},
 	}
@@ -146,22 +109,56 @@ msg-num: how many transaction messages to be included in a transaction
 	return cmd
 }
 
-func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCchain, mainchainibcinfo []query.ClientIds, mainchain config.IBCchain, cfg *config.Config, args []string) error {
-	client, err := client.NewClient(mainchain.Rpc, mainchain.Grpc)
+func SrcChainsemd(ctx context.Context, cmd *cobra.Command, cfg *config.Config, dstchains []string, chainname string, args []string) error {
+	var mainchain config.IBCchain
+	var subchains []config.IBCchain
+	for _, ibcconfigchain := range cfg.IBCconfig.Chains {
+		if ibcconfigchain.ChainId == chainname {
+			mainchain = ibcconfigchain
+			break
+		}
+	}
+
+	for _, chainname := range dstchains {
+		for _, ibcconfigchain := range cfg.IBCconfig.Chains {
+			if chainname == mainchain.ChainId {
+				break
+			}
+			if ibcconfigchain.ChainId == chainname {
+				subchains = append(subchains, ibcconfigchain)
+				break
+			}
+		}
+	}
+
+	MainChainClient, err := client.NewClient(mainchain.Rpc, mainchain.Grpc)
 	if err != nil {
 		return fmt.Errorf("failed to connect clients: %s", err)
 	}
 
-	defer client.Stop() // nolint: errcheck
-	ibcclientCtx := client.GetCLIContext()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	chainID, err := client.RPC.GetNetworkChainID(ctx)
+	defer MainChainClient.Stop() // nolint: errcheck
+	mainchainibcinfo, err := query.AllChainsTrace(mainchain.Grpc)
 	if err != nil {
-		return fmt.Errorf("failed to get chain id: %s", err)
+		return err
 	}
+	var wait sync.WaitGroup
+	for index, dstchaininfo := range subchains {
+		wait.Add(1)
+		go func(index int, dstchaininfo config.IBCchain) {
+			defer wait.Done()
+			DstChainsend(ctx, cmd, MainChainClient, index, dstchaininfo, mainchainibcinfo, mainchain, cfg, args)
+		}(index, dstchaininfo)
+	}
+	wait.Wait()
+	return nil
+}
 
+func DstChainsend(ctx context.Context, cmd *cobra.Command, MainChainClient *client.Client, accountindex int, dstchaininfo config.IBCchain, mainchainibcinfo []query.ClientIds, mainchain config.IBCchain, cfg *config.Config, args []string) error {
+	ibcclientCtx := MainChainClient.GetCLIContext()
+	chainID, err := MainChainClient.RPC.GetNetworkChainID(ctx)
+	if err != nil {
+		return err
+	}
 	var srcPort string
 	var srcChannel string
 	var receiver string
@@ -207,29 +204,29 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 	gasLimit := uint64(cfg.Custom.GasLimit)
 	fees := sdktypes.NewCoins(sdktypes.NewCoin(mainchain.TokenDenom, sdktypes.NewInt(cfg.Custom.FeeAmount)))
 	memo := cfg.Custom.Memo
-	tx := tx.IbcNewtransaction(client, chainID, gasLimit, fees, memo)
-	account, err := client.GRPC.GetBaseAccountInfo(ctx, accAddr)
+	tx := tx.IbcNewtransaction(MainChainClient, chainID, gasLimit, fees, memo)
+	account, err := MainChainClient.GRPC.GetBaseAccountInfo(ctx, accAddr)
 	if err != nil {
 		return fmt.Errorf("failed to get account information: %s", err)
 	}
 	accSeq := account.GetSequence()
 	accNum := account.GetAccountNumber()
 	blockTimes := make(map[int64]time.Time)
-	st, err := client.RPC.Status(ctx)
+	st, err := MainChainClient.RPC.Status(ctx)
 	if err != nil {
 		return fmt.Errorf("get status: %w", err)
 	}
 	startingHeight := st.SyncInfo.LatestBlockHeight + 2
 	log.Info().Msgf("current block height is %d, waiting for the next block to be committed <%s>", st.SyncInfo.LatestBlockHeight, mainchain.ChainId)
 
-	if err := rpcclient.WaitForHeight(client.RPC, startingHeight-1, nil); err != nil {
+	if err := rpcclient.WaitForHeight(MainChainClient.RPC, startingHeight-1, nil); err != nil {
 		return fmt.Errorf("wait for height: %w", err)
 	}
 	log.Info().Msgf("starting simulation #%d, blocks = %d, num txs per block = %d <%s>", blocks+1, blocks, txNum, mainchain.ChainId)
 	targetHeight := startingHeight
 
 	for i := 0; i < blocks; i++ {
-		st, err := client.RPC.Status(ctx)
+		st, err := MainChainClient.RPC.Status(ctx)
 		if err != nil {
 			return fmt.Errorf("get status: %w", err)
 		}
@@ -251,7 +248,7 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 				if err != nil {
 					return fmt.Errorf("failed to sign and broadcast: %s", err)
 				}
-				resp, err := client.GRPC.BroadcastTx(ctx, txByte)
+				resp, err := MainChainClient.GRPC.BroadcastTx(ctx, txByte)
 				//log.Info().Msgf("took %s broadcasting txs", resp)
 				if err != nil {
 					return fmt.Errorf("broadcast tx: %w", err)
@@ -269,10 +266,10 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 		}
 		//log.Debug().Msgf("took %s broadcasting txs", time.Since(started))
 
-		if err := rpcclient.WaitForHeight(client.RPC, targetHeight, nil); err != nil {
+		if err := rpcclient.WaitForHeight(MainChainClient.RPC, targetHeight, nil); err != nil {
 			return fmt.Errorf("wait for height: %w", err)
 		}
-		r, err := client.RPC.Block(ctx, &targetHeight)
+		r, err := MainChainClient.RPC.Block(ctx, &targetHeight)
 		if err != nil {
 			return err
 		}

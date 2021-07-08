@@ -30,14 +30,14 @@ const (
 
 func IBCtransferCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "transfer [src-port] [src-channel] [receiver] [amount] [blocks] [tx-num] [msg-num]",
+		Use:     "transfer [src-chainid] [src-port] [src-channel] [receiver] [amount] [blocks] [tx-num] [msg-num]",
 		Short:   "Transfer a fungible token through IBC",
 		Aliases: []string{"t"},
-		Args:    cobra.ExactArgs(7),
+		Args:    cobra.ExactArgs(8),
 		Long: `Transfer a fungible token through IBC.
 
-Example: $tester t transfer channel-0 cosmos1pacc0fr45hggcn8jrfhgnqf8vgyqna7r5sftql 10uatom 10 1 1
-!!!only cosmos account used
+Example: $tester t gaia transfer channel-0 cosmos1pacc0fr45hggcn8jrfhgnqf8vgyqna7r5sftql 10uatom 10 1 1
+
 blocks: how many blocks to keep the test going?
 tx-num: how many transactions to be included in a block
 msg-num: how many transaction messages to be included in a transaction
@@ -52,8 +52,14 @@ msg-num: how many transaction messages to be included in a transaction
 			if err != nil {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
-
-			client, err := client.NewClient(cfg.RPC.Address, cfg.GRPC.Address)
+			var mainchain config.IBCchain
+			for _, i := range cfg.IBCconfig.Chains {
+				if i.ChainId == args[0] {
+					mainchain = i
+					break
+				}
+			}
+			client, err := client.NewClient(mainchain.Rpc, mainchain.Grpc)
 			if err != nil {
 				return fmt.Errorf("failed to connect clients: %s", err)
 			}
@@ -68,11 +74,11 @@ msg-num: how many transaction messages to be included in a transaction
 				return fmt.Errorf("failed to get chain id: %s", err)
 			}
 
-			srcPort := args[0]
-			srcChannel := args[1]
-			receiver := args[2]
+			srcPort := args[1]
+			srcChannel := args[2]
+			receiver := args[3]
 
-			coin, err := sdktypes.ParseCoinNormalized(args[3])
+			coin, err := sdktypes.ParseCoinNormalized(args[4])
 			if err != nil {
 				return err
 			}
@@ -82,28 +88,29 @@ msg-num: how many transaction messages to be included in a transaction
 				coin.Denom = denomTrace.IBCDenom()
 			}
 
-			blocks, err := strconv.Atoi(args[4])
+			blocks, err := strconv.Atoi(args[5])
 			if err != nil {
-				return fmt.Errorf("blocks must be integer: %s", args[0])
+				return fmt.Errorf("blocks must be integer: %s", args[5])
 			}
 
-			txNum, err := strconv.Atoi(args[5])
+			txNum, err := strconv.Atoi(args[6])
 			if err != nil {
-				return fmt.Errorf("txNum must be integer: %s", args[0])
+				return fmt.Errorf("txNum must be integer: %s", args[6])
 			}
 
-			msgNum, err := strconv.Atoi(args[6])
+			msgNum, err := strconv.Atoi(args[7])
 			if err != nil {
-				return fmt.Errorf("txNum must be integer: %s", args[0])
+				return fmt.Errorf("msgNum must be integer: %s", args[7])
 			}
 
-			accAddr, privKey, err := wallet.RecoverAccountFromMnemonic(cfg.Custom.Mnemonics[0], "")
+			accAddr, privKey, err := wallet.IBCRecoverAccountFromMnemonic(cfg.Custom.Mnemonics[0], "", mainchain.AccountHD, mainchain.AccountaddrPrefix)
 			if err != nil {
 				return fmt.Errorf("failed to retrieve account from mnemonic: %s", err)
 			}
 
 			gasLimit := uint64(cfg.Custom.GasLimit)
-			fees := sdktypes.NewCoins(sdktypes.NewCoin(cfg.Custom.FeeDenom, sdktypes.NewInt(cfg.Custom.FeeAmount)))
+
+			fees := sdktypes.NewCoins(sdktypes.NewCoin(mainchain.TokenDenom, sdktypes.NewInt(cfg.Custom.FeeAmount)))
 			memo := cfg.Custom.Memo
 
 			tx := tx.IbcNewtransaction(client, chainID, gasLimit, fees, memo)
