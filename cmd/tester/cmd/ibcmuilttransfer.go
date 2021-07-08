@@ -238,7 +238,7 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 			targetHeight = st.SyncInfo.LatestBlockHeight + 1
 		}
 
-		started := time.Now()
+		//started := time.Now()
 		sent := 0
 	loop:
 		for sent < txNum {
@@ -267,7 +267,7 @@ func DstChainsend(cmd *cobra.Command, accountindex int, dstchaininfo config.IBCc
 				sent++
 			}
 		}
-		log.Debug().Msgf("took %s broadcasting txs", time.Since(started))
+		//log.Debug().Msgf("took %s broadcasting txs", time.Since(started))
 
 		if err := rpcclient.WaitForHeight(client.RPC, targetHeight, nil); err != nil {
 			return fmt.Errorf("wait for height: %w", err)

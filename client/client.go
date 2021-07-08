@@ -7,8 +7,6 @@ import (
 	"github.com/b-harvest/cosmos-module-stress-test/client/grpc"
 	"github.com/b-harvest/cosmos-module-stress-test/client/rpc"
 	"github.com/b-harvest/cosmos-module-stress-test/codec"
-
-	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -27,7 +25,7 @@ type Client struct {
 func NewClient(rpcURL string, grpcURL string) (*Client, error) {
 	codec.SetCodec()
 
-	log.Debug().Msg("connecting clients")
+	//log.Debug().Msg("connecting clients")
 
 	rpcClient, err := rpc.NewClient(rpcURL, DefaultRPCTimeout)
 	if err != nil {

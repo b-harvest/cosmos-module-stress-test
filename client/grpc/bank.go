@@ -28,3 +28,17 @@ func (c *Client) GetBalance(ctx context.Context, address string, denom string) (
 
 	return resp.GetBalance(), nil
 }
+
+func (c *Client) GetAllBalances(ctx context.Context, address string) (sdktypes.Coins, error) {
+	bankClient := c.GetBankQueryClient()
+
+	req := banktypes.QueryAllBalancesRequest{
+		Address: address,
+	}
+
+	resp, err := bankClient.AllBalances(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetBalances(), nil
+}
