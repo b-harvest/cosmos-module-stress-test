@@ -4,24 +4,18 @@ import (
 	"context"
 	"log"
 
-	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
-	ibcconntypes "github.com/cosmos/cosmos-sdk/x/ibc/core/03-connection/types"
 	ibcchantypes "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
 	"google.golang.org/grpc"
 )
 
-type ConnectIds struct {
-	ConnectId string
-	ChannsIDs []string
-}
-
-type ClientIds struct {
+type OpenChannel struct {
+	ChannelId     string
 	ClientId      string
 	ClientChainId string
-	ConnectIDs    []ConnectIds
+	ConnectionIds []string
 }
 
-func AllChainsTrace(GrpcAddress string) ([]ClientIds, error) {
+func AllChainsTrace(GrpcAddress string) ([]OpenChannel, error) {
 
 	connV, err := grpc.Dial(GrpcAddress, grpc.WithInsecure())
 	grpcConn := connV
@@ -29,63 +23,61 @@ func AllChainsTrace(GrpcAddress string) ([]ClientIds, error) {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
+	var OpenChannels []OpenChannel
 
-	queryClient := ibcclienttypes.NewQueryClient(grpcConn)
-	clientres, err := queryClient.ClientStates(
+	queryClient := ibcchantypes.NewQueryClient(grpcConn)
+	channelsres, err := queryClient.Channels(
 		context.Background(),
-		&ibcclienttypes.QueryClientStatesRequest{},
+		&ibcchantypes.QueryChannelsRequest{},
 	)
 	if err != nil {
 		return nil, err
 	}
+	Channels := channelsres.GetChannels()
 
-	States := clientres.GetClientStates()
-	var Chains []ClientIds
-	for _, State := range States {
-		var Client ClientIds
-
-		v := State.ClientState
-		err = v.Unmarshal(v.Value)
-		if err != nil {
-			return nil, err
-		}
-		Client.ClientId = State.ClientId
-		Client.ClientChainId = v.TypeUrl
-		queryClient := ibcconntypes.NewQueryClient(grpcConn)
-		connres, err := queryClient.ClientConnections(
-			context.Background(),
-			&ibcconntypes.QueryClientConnectionsRequest{
-				ClientId: State.ClientId,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-		Conns := connres.GetConnectionPaths()
-
-		var Connect ConnectIds
-		for _, Conn := range Conns {
-			Connect.ConnectId = Conn
-			queryClient := ibcchantypes.NewQueryClient(grpcConn)
-			chanres, err := queryClient.ConnectionChannels(
+	for _, Channel := range Channels {
+		var OpenChannel OpenChannel
+		if Channel.State == 3 {
+			OpenChannel.ChannelId = Channel.ChannelId
+			clientstateres, err := queryClient.ChannelClientState(
 				context.Background(),
-				&ibcchantypes.QueryConnectionChannelsRequest{
-					Connection: Conn,
+				&ibcchantypes.QueryChannelClientStateRequest{
+					PortId:    "transfer",
+					ChannelId: Channel.ChannelId,
 				},
 			)
 			if err != nil {
 				return nil, err
 			}
-
-			Channels := chanres.GetChannels()
-
-			for _, Channel := range Channels {
-				Connect.ChannsIDs = append(Connect.ChannsIDs, Channel.ChannelId)
+			clientstate := clientstateres.GetIdentifiedClientState()
+			OpenChannel.ClientId = clientstate.ClientId
+			State := clientstate.GetClientState()
+			err = State.Unmarshal(State.Value)
+			if err != nil {
+				return nil, err
 			}
-			Client.ConnectIDs = append(Client.ConnectIDs, Connect)
+			OpenChannel.ClientChainId = State.TypeUrl
+
+			channelres, err := queryClient.Channel(
+				context.Background(),
+				&ibcchantypes.QueryChannelRequest{
+					PortId:    "transfer",
+					ChannelId: Channel.ChannelId,
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+			channelinfo := channelres.GetChannel()
+
+			for _, connectionId := range channelinfo.ConnectionHops {
+				OpenChannel.ConnectionIds = append(OpenChannel.ConnectionIds, connectionId)
+			}
+
 		}
-		Chains = append(Chains, Client)
+		OpenChannels = append(OpenChannels, OpenChannel)
 
 	}
-	return Chains, nil
+	return OpenChannels, nil
+
 }

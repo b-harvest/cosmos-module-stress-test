@@ -27,7 +27,7 @@ func IBCtraceCmd() *cobra.Command {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
 			type Chain struct {
-				IBCInfo []query.ClientIds
+				IBCInfo []query.OpenChannel
 				ChainId string
 			}
 
@@ -52,17 +52,15 @@ func IBCtraceCmd() *cobra.Command {
 					fmt.Print(j.ClientChainId)
 					fmt.Print(":")
 					fmt.Print(j.ClientId)
-					for _, q := range j.ConnectIDs {
-						fmt.Print("[")
-						fmt.Print(q.ConnectId)
-						fmt.Print("(")
-						for _, r := range q.ChannsIDs {
-							fmt.Print(r)
-							fmt.Print(",")
-						}
-						fmt.Print(")")
-						fmt.Print("],")
+					fmt.Print("[")
+					for _, q := range j.ConnectionIds {
+						fmt.Print(q)
 					}
+					fmt.Print("(")
+					fmt.Print(j.ChannelId)
+					fmt.Print(",")
+					fmt.Print(")")
+					fmt.Print("],")
 					fmt.Print("},")
 					fmt.Println("")
 				}

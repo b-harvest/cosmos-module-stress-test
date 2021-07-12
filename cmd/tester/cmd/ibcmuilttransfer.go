@@ -153,7 +153,7 @@ func SrcChainsemd(ctx context.Context, cmd *cobra.Command, cfg *config.Config, d
 	return nil
 }
 
-func DstChainsend(ctx context.Context, cmd *cobra.Command, MainChainClient *client.Client, accountindex int, dstchaininfo config.IBCchain, mainchainibcinfo []query.ClientIds, mainchain config.IBCchain, cfg *config.Config, args []string) error {
+func DstChainsend(ctx context.Context, cmd *cobra.Command, MainChainClient *client.Client, accountindex int, dstchaininfo config.IBCchain, mainchainibcinfo []query.OpenChannel, mainchain config.IBCchain, cfg *config.Config, args []string) error {
 	ibcclientCtx := MainChainClient.GetCLIContext()
 	chainID, err := MainChainClient.RPC.GetNetworkChainID(ctx)
 	if err != nil {
@@ -165,10 +165,9 @@ func DstChainsend(ctx context.Context, cmd *cobra.Command, MainChainClient *clie
 	for _, i := range mainchainibcinfo {
 		if dstchaininfo.ChainId == i.ClientChainId {
 			srcPort = "transfer"
-			for _, j := range i.ConnectIDs {
-				srcChannel = j.ChannsIDs[0]
-				receiver = dstchaininfo.DstAddress
-			}
+			srcChannel = i.ChannelId
+			receiver = dstchaininfo.DstAddress
+
 			break
 		}
 	}
