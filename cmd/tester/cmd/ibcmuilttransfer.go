@@ -95,7 +95,7 @@ msg-num: how many transaction messages to be included in a transaction
 				wait.Add(1)
 				go func(chainname string) {
 					defer wait.Done()
-					SrcChainsemd(ctx, cmd, cfg, dstchains, chainname, args)
+					SrcChainsend(ctx, cmd, cfg, dstchains, chainname, args)
 				}(chainname)
 			}
 			wait.Wait()
@@ -109,7 +109,7 @@ msg-num: how many transaction messages to be included in a transaction
 	return cmd
 }
 
-func SrcChainsemd(ctx context.Context, cmd *cobra.Command, cfg *config.Config, dstchains []string, chainname string, args []string) error {
+func SrcChainsend(ctx context.Context, cmd *cobra.Command, cfg *config.Config, dstchains []string, chainname string, args []string) error {
 	var mainchain config.IBCchain
 	var subchains []config.IBCchain
 	for _, ibcconfigchain := range cfg.IBCconfig.Chains {
