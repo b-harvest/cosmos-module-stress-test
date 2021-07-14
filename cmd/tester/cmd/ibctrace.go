@@ -35,8 +35,6 @@ func IBCtraceCmd() *cobra.Command {
 				ChainId string
 			}
 
-			var Chains []Chain
-
 			for _, i := range cfg.IBCconfig.Chains {
 				var chain Chain
 				client, err := client.NewClient(i.Rpc, i.Grpc)
@@ -52,13 +50,10 @@ func IBCtraceCmd() *cobra.Command {
 				}
 				chain.ChainId = i.ChainId
 				chain.IBCInfo = q
-				Chains = append(Chains, chain)
-			}
 
-			for _, i := range Chains {
-				fmt.Print(i.ChainId)
+				fmt.Print(chain.ChainId)
 				fmt.Println("")
-				for _, j := range i.IBCInfo {
+				for _, j := range chain.IBCInfo {
 					fmt.Print("{")
 					fmt.Print(j.ClientChainId)
 					fmt.Print(":")
