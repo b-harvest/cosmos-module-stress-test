@@ -1,11 +1,9 @@
-package query
+package grpc
 
 import (
 	"context"
-	"log"
 
 	ibcchantypes "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/types"
-	"google.golang.org/grpc"
 )
 
 type OpenChannel struct {
@@ -15,18 +13,16 @@ type OpenChannel struct {
 	ConnectionIds []string
 }
 
-func AllChainsTrace(GrpcAddress string) ([]OpenChannel, error) {
+func (c *Client) GetIBCChannQueryClient() ibcchantypes.QueryClient {
+	return ibcchantypes.NewQueryClient(c)
+}
 
-	connV, err := grpc.Dial(GrpcAddress, grpc.WithInsecure())
-	grpcConn := connV
-	defer grpcConn.Close()
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
+func (c *Client) AllChainsTrace(ctx context.Context) ([]OpenChannel, error) {
+	client := c.GetIBCChannQueryClient()
+
 	var OpenChannels []OpenChannel
 
-	queryClient := ibcchantypes.NewQueryClient(grpcConn)
-	channelsres, err := queryClient.Channels(
+	channelsres, err := client.Channels(
 		context.Background(),
 		&ibcchantypes.QueryChannelsRequest{},
 	)
@@ -39,7 +35,7 @@ func AllChainsTrace(GrpcAddress string) ([]OpenChannel, error) {
 		var OpenChannel OpenChannel
 		if Channel.State == 3 {
 			OpenChannel.ChannelId = Channel.ChannelId
-			clientstateres, err := queryClient.ChannelClientState(
+			clientstateres, err := client.ChannelClientState(
 				context.Background(),
 				&ibcchantypes.QueryChannelClientStateRequest{
 					PortId:    "transfer",
@@ -58,7 +54,7 @@ func AllChainsTrace(GrpcAddress string) ([]OpenChannel, error) {
 			}
 			OpenChannel.ClientChainId = State.TypeUrl
 
-			channelres, err := queryClient.Channel(
+			channelres, err := client.Channel(
 				context.Background(),
 				&ibcchantypes.QueryChannelRequest{
 					PortId:    "transfer",
@@ -71,7 +67,8 @@ func AllChainsTrace(GrpcAddress string) ([]OpenChannel, error) {
 			channelinfo := channelres.GetChannel()
 
 			for _, connectionId := range channelinfo.ConnectionHops {
-				OpenChannel.ConnectionIds = append(OpenChannel.ConnectionIds, connectionId)
+				ConnectionIds := OpenChannel.ConnectionIds
+				OpenChannel.ConnectionIds = append(ConnectionIds, connectionId)
 			}
 
 		}

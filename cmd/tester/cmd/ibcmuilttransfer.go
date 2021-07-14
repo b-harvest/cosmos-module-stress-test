@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"github.com/b-harvest/cosmos-module-stress-test/client"
+	"github.com/b-harvest/cosmos-module-stress-test/client/grpc"
 	"github.com/b-harvest/cosmos-module-stress-test/config"
-	"github.com/b-harvest/cosmos-module-stress-test/query"
+
 	"github.com/b-harvest/cosmos-module-stress-test/tx"
 	"github.com/b-harvest/cosmos-module-stress-test/wallet"
 	rpcclient "github.com/tendermint/tendermint/rpc/client"
@@ -137,7 +138,9 @@ func SrcChainsend(ctx context.Context, cmd *cobra.Command, cfg *config.Config, d
 	}
 
 	defer MainChainClient.Stop() // nolint: errcheck
-	mainchainibcinfo, err := query.AllChainsTrace(mainchain.Grpc)
+	defer MainChainClient.GRPC.Close()
+	grpcclient := MainChainClient.GRPC
+	mainchainibcinfo, err := grpcclient.AllChainsTrace(ctx)
 	if err != nil {
 		return err
 	}
@@ -153,7 +156,7 @@ func SrcChainsend(ctx context.Context, cmd *cobra.Command, cfg *config.Config, d
 	return nil
 }
 
-func DstChainsend(ctx context.Context, cmd *cobra.Command, MainChainClient *client.Client, accountindex int, dstchaininfo config.IBCchain, mainchainibcinfo []query.OpenChannel, mainchain config.IBCchain, cfg *config.Config, args []string) error {
+func DstChainsend(ctx context.Context, cmd *cobra.Command, MainChainClient *client.Client, accountindex int, dstchaininfo config.IBCchain, mainchainibcinfo []grpc.OpenChannel, mainchain config.IBCchain, cfg *config.Config, args []string) error {
 	ibcclientCtx := MainChainClient.GetCLIContext()
 	chainID, err := MainChainClient.RPC.GetNetworkChainID(ctx)
 	if err != nil {

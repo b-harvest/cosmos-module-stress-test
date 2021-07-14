@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/b-harvest/cosmos-module-stress-test/client"
+	"github.com/b-harvest/cosmos-module-stress-test/client/grpc"
 	"github.com/b-harvest/cosmos-module-stress-test/config"
-	"github.com/b-harvest/cosmos-module-stress-test/query"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 
 	"github.com/spf13/cobra"
@@ -18,6 +20,8 @@ func IBCtraceCmd() *cobra.Command {
 		Args:    cobra.NoArgs,
 		Long:    ``,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 			err := SetLogger(logLevel)
 			if err != nil {
 				return err
@@ -27,7 +31,7 @@ func IBCtraceCmd() *cobra.Command {
 				return fmt.Errorf("failed to read config file: %s", err)
 			}
 			type Chain struct {
-				IBCInfo []query.OpenChannel
+				IBCInfo []grpc.OpenChannel
 				ChainId string
 			}
 
@@ -35,7 +39,14 @@ func IBCtraceCmd() *cobra.Command {
 
 			for _, i := range cfg.IBCconfig.Chains {
 				var chain Chain
-				q, err := query.AllChainsTrace(i.Grpc)
+				client, err := client.NewClient(i.Rpc, i.Grpc)
+				if err != nil {
+					return err
+				}
+				defer client.Stop() // nolint: errcheck
+				defer client.GRPC.Close()
+				grpcclient := client.GRPC
+				q, err := grpcclient.AllChainsTrace(ctx)
 				if err != nil {
 					return err
 				}

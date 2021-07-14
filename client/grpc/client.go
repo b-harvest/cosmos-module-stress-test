@@ -22,16 +22,17 @@ func NewClient(grpcURL string, timeout int64) (*Client, error) {
 	var conn *grpc.ClientConn
 	var err error
 
-	urls := strings.Split(grpcURL, ":")
+	urls := strings.Split(grpcURL, "//")
 	if len(urls) > 2 {
 		panic(fmt.Sprintf("incorrect grpc endpoint: %s", urls))
 	}
 
-	if urls[1] == "443" {
+	if urls[0] == "https" {
 		grpcopts = []grpc.DialOption{
 			grpc.WithTransportCredentials(credentials.NewTLS(nil)),
 		}
-		conn, err = grpc.Dial(grpcURL, grpcopts...)
+		httpsurl := strings.Split(grpcURL, "//")
+		conn, err = grpc.Dial(httpsurl[1], grpcopts...)
 		if err != nil {
 			return &Client{}, fmt.Errorf("failed to connect GRPC client: %s", err)
 		}
@@ -40,7 +41,8 @@ func NewClient(grpcURL string, timeout int64) (*Client, error) {
 			grpc.WithInsecure(),
 			grpc.WithBlock(),
 		}
-		conn, err = grpc.DialContext(context.Background(), grpcURL, grpcopts...)
+		httpurl := strings.Split(grpcURL, "//")
+		conn, err = grpc.DialContext(context.Background(), httpurl[1], grpcopts...)
 		if err != nil {
 			return &Client{}, fmt.Errorf("failed to connect GRPC client: %s", err)
 		}
